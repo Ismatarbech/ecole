@@ -1,10 +1,11 @@
 <x-layouts::app :title="__('Dashboard')">
+  
 
     <div class="pagetitle">
       <h1>Dashboard</h1>
       <nav>
         <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="/dashboard">Accueil</a></li>
+          <li class="breadcrumb-item"><a href="/">Accueil</a></li>
           <li class="breadcrumb-item active">Dashboard</li>
         </ol>
       </nav>
@@ -17,6 +18,7 @@
         <div class="col-lg-8">
           <div class="row">
 
+            @canany(['view_nombres','view_any_nombres'])
             <!-- Sales Card -->
             <div class="col-xxl-4 col-md-6">
               <div class="card info-card sales-card">
@@ -51,7 +53,9 @@
 
               </div>
             </div><!-- End Sales Card -->
+            @endcanany
 
+          @canany(['view_revenues','view_any_revenues'])
             <!-- Revenue Card -->
             <div class="col-xxl-4 col-md-6">
               <div class="card info-card revenue-card">
@@ -86,7 +90,9 @@
 
               </div>
             </div><!-- End Revenue Card -->
+            @endcanany
 
+            @canany(['view_totals','view_any_totals'])
             <!-- Customers Card -->
             <div class="col-xxl-4 col-xl-12">
 
@@ -123,7 +129,9 @@
               </div>
 
             </div><!-- End Customers Card -->
+            @endcanany
 
+            @canany(['view_rapports','view_any_rapports'])
             <!-- Reports -->
             <div class="col-12">
               <div class="card">
@@ -204,26 +212,14 @@
                   <!-- End Line Chart -->
 
                 </div>
-
+              @endcanany
               </div>
             </div><!-- End Reports -->
+            
 
             <!-- Recent Sales -->
             <div class="col-12">
               <div class="card recent-sales overflow-auto">
-
-                <div class="filter">
-                  <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
-                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                    <li class="dropdown-header text-start">
-                      <h6>Filtre</h6>
-                    </li>
-
-                    <li><a class="dropdown-item" href="#">Aujourd'hui</a></li>
-                    <li><a class="dropdown-item" href="#">Mois passé</a></li>
-                    <li><a class="dropdown-item" href="#">Année passé</a></li>
-                  </ul>
-                </div>
 
                 <div class="card-body">
                   <h5 class="card-title">Top 5 des élèves <span>| meilleure moyenne</span></h5>
@@ -258,6 +254,7 @@
               </div>
             </div><!-- End Recent Sales -->
 
+            @canany(['view_revenueparans','view_any_revenueparans'])
             <!-- Top Selling -->
             <div class="col-12">
               <div class="card top-selling overflow-auto">
@@ -305,6 +302,7 @@
 
               </div>
             </div><!-- End Top Selling -->
+            @endcanany
 
           </div>
         </div><!-- End Left side columns -->
@@ -312,6 +310,7 @@
         <!-- Right side columns -->
         <div class="col-lg-4">
 
+          @canany(['view_recent','view_any_recent'])
           <!-- Recent Activity -->
           <div class="card">
             <div class="filter">
@@ -344,7 +343,9 @@
 
             </div>
           </div><!-- End Recent Activity -->
+          @endcanany
 
+          @canany(['view_barchart','view_any_barchart'])
           <!-- Budget Report -->
           <div class="card">
             <div class="filter">
@@ -359,7 +360,7 @@
                 <li><a class="dropdown-item" href="#">This Year</a></li>
               </ul>
             </div>
-  <div class="card-body">
+             <div class="card-body">
               <h5 class="card-title">Bar Chart</h5>
 
               <!-- Bar Chart -->
@@ -392,26 +393,14 @@
                 });
               </script>
               <!-- End Bar Chart -->
+              @endcanany
 
             </div>
           </div><!-- End Budget Report -->
 
           <!-- Website Traffic -->
-          <div class="card">
-            <div class="filter">
-              <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
-              <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                <li class="dropdown-header text-start">
-                  <h6>Filter</h6>
-                </li>
-
-                <li><a class="dropdown-item" href="#">Today</a></li>
-                <li><a class="dropdown-item" href="#">This Month</a></li>
-                <li><a class="dropdown-item" href="#">This Year</a></li>
-              </ul>
-            </div>
-
-            <div class="card-body pb-0">
+          <div class="card"> 
+           <div class="card-body pb-0">
               <h5 class="card-title">Répartition des élèves <span>| CP1 à Terminale</span></h5>
 
               <div id="trafficChart" style="min-height: 400px;" class="echart"></div>

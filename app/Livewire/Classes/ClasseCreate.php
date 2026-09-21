@@ -44,18 +44,26 @@ class ClasseCreate extends Component
         }
     }
 
-    public function render()
-    {
-        $anneeScolaire = AnneeScolaire::where('status', 'active')->first();
+   public function render()
+{
+    $anneeScolaire = AnneeScolaire::where('status', 'active')->first();
 
-        $anneecurrent = Niveau::where(
-            'annee_scolaire_id',
-            $anneeScolaire->id
-        )->get();
+    if (!$anneeScolaire) {
+        session()->flash('error', "Aucune année scolaire active.");
 
-        return view(
-            'classes.classe-create',
-            compact('anneecurrent')
-        );
+        return view('classes.classe-create', [
+            'anneecurrent' => collect() // vide
+        ]);
     }
+
+    $anneecurrent = Niveau::where(
+        'annee_scolaire_id',
+        $anneeScolaire->id
+    )->get();
+
+    return view(
+        'classes.classe-create',
+        compact('anneecurrent')
+    );
+}
 }

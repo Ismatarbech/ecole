@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('nom');
             $table->string('logo');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

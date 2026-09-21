@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('matieres', function (Blueprint $table) {
             $table->id();
             $table->string('nom');
-            $table->text('description')->nullable();
             $table->foreignId('niveau_id')->constrained('niveaux')->onDelete('cascade');
             $table->integer('coefficient');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

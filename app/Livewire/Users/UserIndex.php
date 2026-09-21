@@ -5,6 +5,7 @@ namespace App\Livewire\Users;
 use App\Models\User;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\Auth;
 
 class UserIndex extends Component
 {
@@ -35,6 +36,18 @@ class UserIndex extends Component
                 return;
             }
 
+            // ❌ Empêcher auto suppression
+            if (Auth::id() == $user->id) {
+                $this->errorMessage = "❌ Tu ne peux pas supprimer ton propre compte.";
+                return;
+            }
+
+            // ❌ Empêcher suppression super-admin
+            if ($user->hasRole('super-admin')) {
+                $this->errorMessage = "⛔ Impossible de supprimer le Super Admin.";
+                return;
+            }
+
             $userName = $user->name;
 
             $user->delete();
@@ -49,21 +62,52 @@ class UserIndex extends Component
         }
     }
 
-    public function render()
-    {
-        $users = User::with('roles')
-            ->when($this->search !== '', function ($query) {
-                $query->where(function ($query) {
-                    $query->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('email', 'like', '%' . $this->search . '%');
-                });
-            })
-            ->latest()
-            ->paginate(10);
+public function render()
+{
+    $currentUser = auth()->user();
 
-        return view(
-            'users.user-index',
-            compact('users')
-        );
-    }
+    $users = User::with('roles')
+
+        ->where('id', '!=', $currentUser->id)
+
+        ->whereDoesntHave('roles', function ($q) {
+            $q->where('name', 'super-admin');
+        })
+
+        ->select('users.*')
+        ->selectRaw("
+            CASE
+                WHEN EXISTS (SELECT 1 FROM model_has_roles mh
+                    JOIN roles r ON r.id = mh.role_id
+                    WHERE mh.model_id = users.id AND r.name = 'proviseur') THEN 1
+
+                WHEN EXISTS (SELECT 1 FROM model_has_roles mh
+                    JOIN roles r ON r.id = mh.role_id
+                    WHERE mh.model_id = users.id AND r.name = 'censeur') THEN 2
+
+                WHEN EXISTS (SELECT 1 FROM model_has_roles mh
+                    JOIN roles r ON r.id = mh.role_id
+                    WHERE mh.model_id = users.id AND r.name = 'comptable') THEN 3
+
+                WHEN EXISTS (SELECT 1 FROM model_has_roles mh
+                    JOIN roles r ON r.id = mh.role_id
+                    WHERE mh.model_id = users.id AND r.name = 'enseignant') THEN 4
+
+                ELSE 5
+            END as role_priority
+        ")
+
+        ->when($this->search !== '', function ($query) {
+            $query->where(function ($query) {
+                $query->where('name', 'like', '%' . $this->search . '%')
+                      ->orWhere('email', 'like', '%' . $this->search . '%');
+            });
+        })
+
+        ->orderBy('role_priority') // ⭐ ordre par rôle
+        ->latest()
+        ->paginate(10);
+
+    return view('users.user-index', compact('users'));
+}
 }

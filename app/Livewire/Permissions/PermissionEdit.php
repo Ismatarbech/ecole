@@ -1,5 +1,5 @@
 <?php
- 
+
 namespace App\Livewire\Permissions;
 
 use Livewire\Component;
@@ -9,7 +9,8 @@ use Spatie\Permission\Models\Permission;
 class PermissionEdit extends Component
 {
     public Permission $permission;
-    public string $name;
+
+    public string $name = '';
     public array $selectedRoles = [];
     public array $allRoles = [];
 
@@ -17,14 +18,28 @@ class PermissionEdit extends Component
     {
         $this->permission = $permission;
         $this->name = $permission->name;
-        $this->selectedRoles = $permission->roles()->pluck('name')->toArray();
-        $this->allRoles = Role::pluck('name')->toArray();
+
+        // 🔐 filtre des rôles selon utilisateur connecté
+        $this->allRoles = Role::query()
+            ->when(!auth()->user()->hasRole('super-admin'), function ($q) {
+                $q->where('name', '!=', 'super-admin');
+            })
+            ->pluck('name')
+            ->toArray();
+
+        // 🔐 selected roles aussi filtrés
+        $this->selectedRoles = $permission->roles()
+            ->pluck('name')
+            ->filter(function ($role) {
+                return auth()->user()->hasRole('super-admin') || $role !== 'super-admin';
+            })
+            ->toArray();
     }
 
     protected function rules()
     {
         return [
-            'name' => 'required|string|unique:permissions,name,'.$this->permission->id,
+            'name' => 'required|string|unique:permissions,name,' . $this->permission->id,
             'selectedRoles' => 'array',
             'selectedRoles.*' => 'string|exists:roles,name',
         ];
@@ -34,21 +49,31 @@ class PermissionEdit extends Component
     {
         $this->validate();
 
-        try {
-            $this->permission->update(['name' => $this->name]);
-            $this->permission->syncRoles($this->selectedRoles);
-        } catch (\Throwable $exception) {
-            session()->flash('error', "La permission n'a pas pu être modifiée.");
+        // 🔐 sécurité backend
+        if (!auth()->user() || !auth()->user()->hasRole('super-admin')) {
+            session()->flash('error', 'Accès refusé.');
             return;
         }
 
-        session()->flash('success', 'Permission modifiée avec succès.');
+        try {
+            $this->permission->update([
+                'name' => $this->name
+            ]);
 
-        return redirect()->route('permissions.index');
-    } 
+            $this->permission->syncRoles($this->selectedRoles);
+
+            session()->flash('success', 'Permission modifiée avec succès.');
+
+            return redirect()->route('permissions.index');
+
+        } catch (\Throwable $exception) {
+            session()->flash('error', "Erreur lors de la modification.");
+            return;
+        }
+    }
 
     public function render()
     {
-         return view('permissions.permission-edit');
+        return view('permissions.permission-edit');
     }
 }

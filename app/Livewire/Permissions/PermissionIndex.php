@@ -1,51 +1,74 @@
 <?php
- 
+
 namespace App\Livewire\Permissions;
 
 use Livewire\Component;
-use Spatie\Permission\Models\Permission;
 use Livewire\WithPagination;
-
-
+use Spatie\Permission\Models\Permission;
 
 class PermissionIndex extends Component
 {
     use WithPagination;
 
+    public string $search = '';
     public string $successMessage = '';
     public string $errorMessage = '';
-    public string $search = '';
 
-    public function updatedSearch(): void
+    protected $paginationTheme = 'bootstrap';
+
+    public function updatedSearch()
     {
         $this->resetPage();
     }
 
-     public function deletePermission($permissionId)
+    // 🔥 ACTIVER / DÉSACTIVER
+    public function toggleStatus($id)
     {
-        $this->successMessage = '';
-        $this->errorMessage = '';
-
         try {
-            $permission = Permission::find($permissionId);
+            $permission = Permission::findOrFail($id);
 
-            if (!$permission) {
-                $this->errorMessage = "La permission n'existe pas.";
-                return;
-            }
+            $permission->update([
+                'active' => !$permission->active
+            ]);
+
+            $this->errorMessage = '';
+
+            $this->successMessage = $permission->active
+                ? "Permission activée"
+                : "Permission désactivée";
+
+        } catch (\Exception $e) {
+            $this->successMessage = '';
+            $this->errorMessage = "Permission introuvable.";
+        }
+    }
+
+    // 🗑 DELETE
+    public function deletePermission($id)
+    {
+        try {
+            $permission = Permission::findOrFail($id);
 
             $permission->delete();
-            $this->successMessage = 'Permission supprimée avec succès.';
-        } catch (\Throwable $exception) {
-            $this->errorMessage = "La permission n'a pas pu être supprimée.";
+
+            $this->errorMessage = '';
+            $this->successMessage = "Permission supprimée avec succès";
+
+        } catch (\Exception $e) {
+            $this->successMessage = '';
+            $this->errorMessage = "Permission introuvable.";
         }
     }
 
     public function render()
     {
-        $permissions = Permission::when($this->search !== '', function ($query) {
-            $query->where('name', 'like', '%' . $this->search . '%');
-        })->get();
+        $permissions = Permission::query()
+            ->when($this->search, function ($q) {
+                $q->where('name', 'like', '%' . $this->search . '%');
+            })
+            ->orderBy('id', 'asc')
+            ->paginate(10);
+
         return view('permissions.permission-index', [
             'permissions' => $permissions
         ]);

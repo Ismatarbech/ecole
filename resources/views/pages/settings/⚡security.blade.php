@@ -1,36 +1,44 @@
 <?php
 
-use App\Concerns\PasswordValidationRules;
 use Flux\Flux;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Actions\DisableTwoFactorAuthentication;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
-use Livewire\Attributes\Title;
-use Livewire\Component;
 use Laravel\Passkeys\Actions\DeletePasskey;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Title;
+use Livewire\Component;
 
-new #[Title('Security settings')] class extends Component {
-    use PasswordValidationRules;
+new #[Title('Sécurité')] class extends Component
+{
+    /*
+    |--------------------------------------------------------------------------
+    | TWO FACTOR AUTHENTICATION
+    |--------------------------------------------------------------------------
+    */
 
-    public string $current_password = '';
-    public string $password = '';
-    public string $password_confirmation = '';
+    public bool $canManageTwoFactor = false;
+    public bool $twoFactorEnabled = false;
+    public bool $requiresConfirmation = false;
 
-    public bool $canManageTwoFactor;
-
-    public bool $twoFactorEnabled;
-
-    public bool $requiresConfirmation;
+    /*
+    |--------------------------------------------------------------------------
+    | PASSKEYS
+    |--------------------------------------------------------------------------
+    */
 
     #[Locked]
-    public bool $canManagePasskeys;
+    public bool $canManagePasskeys = false;
 
     #[Locked]
     public array $passkeys = [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | SUPPRESSION PASSKEY
+    |--------------------------------------------------------------------------
+    */
 
     public bool $showDeleteModal = false;
 
@@ -40,302 +48,797 @@ new #[Title('Security settings')] class extends Component {
     #[Locked]
     public string $deletingPasskeyName = '';
 
-    /**
-     * Mount the component.
-     */
-    public function mount(DisableTwoFactorAuthentication $disableTwoFactorAuthentication): void
-    {
-        $this->canManageTwoFactor = Features::canManageTwoFactorAuthentication();
+    /*
+    |--------------------------------------------------------------------------
+    | MOUNT
+    |--------------------------------------------------------------------------
+    */
+
+    public function mount(
+        DisableTwoFactorAuthentication $disableTwoFactorAuthentication
+    ): void {
+        /*
+        |--------------------------------------------------------------------------
+        | TWO FACTOR AUTHENTICATION
+        |--------------------------------------------------------------------------
+        */
+
+        $this->canManageTwoFactor =
+            Features::canManageTwoFactorAuthentication();
 
         if ($this->canManageTwoFactor) {
-            if (Fortify::confirmsTwoFactorAuthentication() && is_null(auth()->user()->two_factor_confirmed_at)) {
-                $disableTwoFactorAuthentication(auth()->user());
+
+            /*
+            | Si la confirmation 2FA est incomplète,
+            | on désactive l'ancienne configuration.
+            */
+
+            if (
+                Fortify::confirmsTwoFactorAuthentication()
+                &&
+                is_null(auth()->user()->two_factor_confirmed_at)
+            ) {
+                $disableTwoFactorAuthentication(
+                    auth()->user()
+                );
             }
 
-            $this->twoFactorEnabled = auth()->user()->hasEnabledTwoFactorAuthentication();
-            $this->requiresConfirmation = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
+            $this->twoFactorEnabled =
+                auth()
+                    ->user()
+                    ->hasEnabledTwoFactorAuthentication();
+
+            $this->requiresConfirmation =
+                Features::optionEnabled(
+                    Features::twoFactorAuthentication(),
+                    'confirm'
+                );
         }
 
-        $this->canManagePasskeys = Features::canManagePasskeys();
+        /*
+        |--------------------------------------------------------------------------
+        | PASSKEYS
+        |--------------------------------------------------------------------------
+        */
+
+        $this->canManagePasskeys =
+            Features::canManagePasskeys();
 
         if ($this->canManagePasskeys) {
             $this->loadPasskeys();
         }
     }
 
-    /**
-     * Update the password for the currently authenticated user.
-     */
-    public function updatePassword(): void
-    {
-        try {
-            $validated = $this->validate([
-                'current_password' => $this->currentPasswordRules(),
-                'password' => $this->passwordRules(),
-            ]);
-        } catch (ValidationException $e) {
-            $this->reset('current_password', 'password', 'password_confirmation');
+    /*
+    |--------------------------------------------------------------------------
+    | CHARGER LES PASSKEYS
+    |--------------------------------------------------------------------------
+    */
 
-            throw $e;
-        }
-
-        Auth::user()->update([
-            'password' => $validated['password'],
-        ]);
-
-        $this->reset('current_password', 'password', 'password_confirmation');
-
-        Flux::toast(variant: 'success', text: __('Password updated.'));
-    }
-
-    /**
-     * Load the user's passkeys.
-     */
     public function loadPasskeys(): void
     {
-        $this->passkeys = auth()->user()->passkeys()
-            ->select(['id', 'name', 'credential', 'created_at', 'last_used_at'])
-            ->latest()
-            ->get()
-            ->map(fn ($passkey) => [
-                'id' => $passkey->id,
-                'name' => $passkey->name,
-                'authenticator' => $passkey->authenticator,
-                'created_at_diff' => $passkey->created_at->diffForHumans(),
-                'last_used_at_diff' => $passkey->last_used_at?->diffForHumans(),
-            ])
-            ->toArray();
+        $this->passkeys =
+            auth()
+                ->user()
+                ->passkeys()
+                ->latest()
+                ->get()
+                ->map(function ($passkey) {
+
+                    return [
+                        'id' => $passkey->id,
+
+                        'name' => $passkey->name,
+
+                        'authenticator' =>
+                            $passkey->authenticator ?? null,
+
+                        'created_at_diff' =>
+                            $passkey->created_at
+                                ?->diffForHumans(),
+
+                        'last_used_at_diff' =>
+                            $passkey->last_used_at
+                                ?->diffForHumans(),
+                    ];
+                })
+                ->toArray();
     }
 
-    /**
-     * Show the delete confirmation modal.
-     */
-    public function confirmDelete(int $passkeyId): void
-    {
-        $passkey = auth()->user()->passkeys()->findOrFail($passkeyId);
+    /*
+    |--------------------------------------------------------------------------
+    | CONFIRMER SUPPRESSION PASSKEY
+    |--------------------------------------------------------------------------
+    */
 
-        $this->deletingPasskeyId = $passkey->id;
-        $this->deletingPasskeyName = $passkey->name;
+    public function confirmDelete(
+        int $passkeyId
+    ): void {
+        $passkey =
+            auth()
+                ->user()
+                ->passkeys()
+                ->findOrFail($passkeyId);
+
+        $this->deletingPasskeyId =
+            $passkey->id;
+
+        $this->deletingPasskeyName =
+            $passkey->name;
+
         $this->showDeleteModal = true;
     }
 
-    /**
-     * Delete the passkey.
-     */
-    public function deletePasskey(DeletePasskey $deletePasskey): void
-    {
+    /*
+    |--------------------------------------------------------------------------
+    | SUPPRIMER PASSKEY
+    |--------------------------------------------------------------------------
+    */
+
+    public function deletePasskey(
+        DeletePasskey $deletePasskey
+    ): void {
         if (! $this->deletingPasskeyId) {
             return;
         }
 
-        $passkey = auth()->user()->passkeys()->findOrFail($this->deletingPasskeyId);
+        $passkey =
+            auth()
+                ->user()
+                ->passkeys()
+                ->findOrFail(
+                    $this->deletingPasskeyId
+                );
 
-        $deletePasskey(auth()->user(), $passkey);
+        $deletePasskey(
+            auth()->user(),
+            $passkey
+        );
 
         $this->closeDeleteModal();
+
         $this->loadPasskeys();
+
+        Flux::toast(
+            variant: 'success',
+            text: 'Clé d’accès supprimée avec succès.'
+        );
     }
 
-    /**
-     * Close the delete confirmation modal.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | FERMER MODAL
+    |--------------------------------------------------------------------------
+    */
+
     public function closeDeleteModal(): void
     {
         $this->showDeleteModal = false;
+
         $this->deletingPasskeyId = null;
+
         $this->deletingPasskeyName = '';
     }
 
-    /**
-     * Handle the two-factor authentication enabled event.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | EVENEMENT 2FA ACTIVE
+    |--------------------------------------------------------------------------
+    */
+
     #[On('two-factor-enabled')]
     public function onTwoFactorEnabled(): void
     {
         $this->twoFactorEnabled = true;
     }
 
-    /**
-     * Disable two-factor authentication for the user.
-     */
-    public function disable(DisableTwoFactorAuthentication $disableTwoFactorAuthentication): void
-    {
-        $disableTwoFactorAuthentication(auth()->user());
+    /*
+    |--------------------------------------------------------------------------
+    | DESACTIVER 2FA
+    |--------------------------------------------------------------------------
+    */
+
+    public function disable(
+        DisableTwoFactorAuthentication $disableTwoFactorAuthentication
+    ): void {
+        $disableTwoFactorAuthentication(
+            auth()->user()
+        );
 
         $this->twoFactorEnabled = false;
+
+        Flux::toast(
+            variant: 'success',
+            text: 'Authentification à deux facteurs désactivée.'
+        );
     }
-}; ?>
+};
 
-<section class="w-full">
-    @include('partials.settings-heading')
+?>
 
-    <flux:heading class="sr-only">{{ __('Security settings') }}</flux:heading>
+<section class="section">
 
-    <x-pages::settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
-        <form method="POST" wire:submit="updatePassword" class="mt-6 space-y-6">
-            <flux:input
-                wire:model="current_password"
-                :label="__('Current password')"
-                type="password"
-                required
-                autocomplete="current-password"
-                viewable
-            />
-            <flux:input
-                wire:model="password"
-                :label="__('New password')"
-                type="password"
-                required
-                autocomplete="new-password"
-                passwordrules="{{ \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString() }}"
-                viewable
-            />
-            <flux:input
-                wire:model="password_confirmation"
-                :label="__('Confirm password')"
-                type="password"
-                required
-                autocomplete="new-password"
-                passwordrules="{{ \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString() }}"
-                viewable
-            />
+{{-- ========================================================= --}}
+{{-- PAGE TITLE --}}
+{{-- ========================================================= --}}
 
-            <div class="flex items-center gap-4">
-                <flux:button variant="primary" type="submit" data-test="update-password-button">
-                    {{ __('Save') }}
-                </flux:button>
-            </div>
-        </form>
+<div class="pagetitle">
+    <h1>Sécurité du compte</h1>
 
-        @if ($canManageTwoFactor)
-            <section class="mt-12">
-                <flux:heading>{{ __('Two-factor authentication') }}</flux:heading>
-                <flux:subheading>{{ __('Manage your two-factor authentication settings') }}</flux:subheading>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ route('dashboard') }}">
+                    Accueil
+                </a>
+            </li>
 
-                <div class="flex flex-col w-full mx-auto space-y-6 text-sm" wire:cloak>
-                    @if ($twoFactorEnabled)
-                        <div class="space-y-4">
-                            <flux:text>
-                                {{ __('You will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.') }}
-                            </flux:text>
+            <li class="breadcrumb-item">
+                Paramètres
+            </li>
 
-                            <div class="flex justify-start">
-                                <flux:button
-                                    variant="danger"
-                                    wire:click="disable"
-                                >
-                                    {{ __('Disable 2FA') }}
-                                </flux:button>
-                            </div>
+            <li class="breadcrumb-item active">
+                Sécurité
+            </li>
+        </ol>
+    </nav>
+</div>
 
-                            <livewire:pages::settings.two-factor.recovery-codes :$requiresConfirmation />
-                        </div>
-                    @else
-                        <div class="space-y-4">
-                            <flux:text variant="subtle">
-                                {{ __('When you enable two-factor authentication, you will be prompted for a secure pin during login. This pin can be retrieved from a TOTP-supported application on your phone.') }}
-                            </flux:text>
+{{-- ========================================================= --}}
+{{-- TWO FACTOR AUTHENTICATION --}}
+{{-- ========================================================= --}}
 
-                            <flux:modal.trigger name="two-factor-setup-modal">
-                                <flux:button
-                                    variant="primary"
-                                    wire:click="$dispatch('start-two-factor-setup')"
-                                >
-                                    {{ __('Enable 2FA') }}
-                                </flux:button>
-                            </flux:modal.trigger>
+@if ($canManageTwoFactor)
 
-                            <livewire:pages::settings.two-factor-setup-modal :requires-confirmation="$requiresConfirmation" />
-                        </div>
-                    @endif
+    <div class="card">
+
+        <div class="card-body">
+
+            {{-- TITRE --}}
+
+            <div class="d-flex align-items-center pt-4 pb-3">
+
+                <div
+                    class="rounded-circle d-flex align-items-center justify-content-center me-3"
+                    style="
+                        width: 52px;
+                        height: 52px;
+                        background-color: #f6f9ff;
+                    "
+                >
+                    <i
+                        class="bi bi-shield-lock"
+                        style="
+                            font-size: 25px;
+                            color: #4154f1;
+                        "
+                    ></i>
                 </div>
-            </section>
-        @endif
 
-        @if ($canManagePasskeys)
-            <section class="mt-12">
-                <flux:heading>{{ __('Passkeys') }}</flux:heading>
-                <flux:subheading>{{ __('Manage your passkeys for passwordless sign-in') }}</flux:subheading>
+                <div>
 
-                <div class="mt-6 flex flex-col w-full mx-auto space-y-6 text-sm" wire:cloak>
-                    <div class="border rounded-lg border-zinc-200 dark:border-zinc-700 overflow-hidden">
-                        @forelse ($passkeys as $passkey)
-                            <div class="flex items-center justify-between p-4 {{ ! $loop->last ? 'border-b border-zinc-200 dark:border-zinc-700' : '' }}">
-                                <div class="flex items-center gap-4">
-                                    <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800">
-                                        <flux:icon.key class="size-5 text-zinc-500 dark:text-zinc-400" />
-                                    </div>
-                                    <div class="space-y-1">
-                                        <div class="flex items-center gap-2.5">
-                                            <p class="font-medium tracking-tight">{{ $passkey['name'] }}</p>
-                                            @if ($passkey['authenticator'])
-                                                <flux:badge size="sm">{{ $passkey['authenticator'] }}</flux:badge>
-                                            @endif
-                                        </div>
-                                        <p class="text-zinc-500 dark:text-zinc-400 text-xs">
-                                            {{ __('Added :time', ['time' => $passkey['created_at_diff']]) }}
-                                            @if ($passkey['last_used_at_diff'])
-                                                <span class="opacity-50 mx-1">/</span>
-                                                {{ __('Last used :time', ['time' => $passkey['last_used_at_diff']]) }}
-                                            @endif
-                                        </p>
-                                    </div>
+                    <h5 class="mb-1">
+                        Authentification à deux facteurs
+                    </h5>
+
+                    <p class="text-muted small mb-0">
+                        Protégez votre compte avec une vérification supplémentaire.
+                    </p>
+
+                </div>
+
+            </div>
+
+            <hr>
+
+            <div wire:cloak>
+
+                {{-- ================================================= --}}
+                {{-- 2FA ACTIVE --}}
+                {{-- ================================================= --}}
+
+                @if ($twoFactorEnabled)
+
+                    <div class="alert alert-success border-0">
+
+                        <div class="d-flex align-items-center">
+
+                            <i
+                                class="bi bi-shield-check me-3"
+                                style="font-size: 28px;"
+                            ></i>
+
+                            <div>
+
+                                <strong>
+                                    Protection activée
+                                </strong>
+
+                                <div class="small">
+
+                                    L'authentification à deux facteurs
+                                    est active sur votre compte.
+
                                 </div>
 
-                                <flux:button
-                                    variant="ghost"
-                                    size="sm"
-                                    icon="trash"
-                                    icon:variant="outline"
-                                    wire:click="confirmDelete({{ $passkey['id'] }})"
-                                    class="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
-                                />
                             </div>
-                        @empty
-                            <div class="p-8 text-center">
-                                <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800">
-                                    <flux:icon.key class="size-7 text-zinc-400 dark:text-zinc-500" />
-                                </div>
-                                <p class="font-medium">{{ __('No passkeys yet') }}</p>
-                                <flux:text class="mt-1">{{ __('Add a passkey to sign in without a password') }}</flux:text>
-                            </div>
-                        @endforelse
+
+                        </div>
+
                     </div>
 
-                    <x-passkey-registration />
-                </div>
-            </section>
-        @endif
-    </x-pages::settings.layout>
+                    <p class="text-muted">
 
-    <flux:modal
-        name="delete-passkey-modal"
-        class="max-w-md md:min-w-md"
-        @close="closeDeleteModal"
-        wire:model="showDeleteModal"
-    >
-        <div class="space-y-6">
-            <div class="space-y-2">
-                <flux:heading size="lg">{{ __('Remove passkey') }}</flux:heading>
-                <flux:text>
-                    {{ __('Are you sure you want to remove the passkey ":name"? You will no longer be able to use it to sign in.', ['name' => $deletingPasskeyName]) }}
-                </flux:text>
+                        Lors de votre prochaine connexion,
+                        vous devrez utiliser un code provenant
+                        de votre application d'authentification.
+
+                    </p>
+
+                    {{-- BOUTON DESACTIVER --}}
+
+                    <div class="mt-4 mb-4">
+
+                        <button
+                            type="button"
+                            class="btn btn-outline-danger"
+                            wire:click="disable"
+                            wire:loading.attr="disabled"
+                        >
+
+                            <span
+                                wire:loading.remove
+                                wire:target="disable"
+                            >
+
+                                <i class="bi bi-shield-x me-1"></i>
+
+                                Désactiver la protection
+
+                            </span>
+
+                            <span
+                                wire:loading
+                                wire:target="disable"
+                            >
+
+                                <span
+                                    class="spinner-border spinner-border-sm me-1"
+                                ></span>
+
+                                Désactivation...
+
+                            </span>
+
+                        </button>
+
+                    </div>
+
+                    {{-- ================================================= --}}
+                    {{-- CODES DE RECUPERATION --}}
+                    {{-- COMPOSANT ORIGINAL --}}
+                    {{-- ================================================= --}}
+
+                    <div class="border-top pt-4">
+
+                        <livewire:pages::settings.two-factor.recovery-codes
+                            :$requiresConfirmation
+                        />
+
+                    </div>
+
+
+                {{-- ================================================= --}}
+                {{-- 2FA NON ACTIVE --}}
+                {{-- ================================================= --}}
+
+                @else
+
+                    <div class="row align-items-center">
+
+                        <div class="col-lg-8">
+
+                            <div class="mb-3 mb-lg-0">
+
+                                <h6>
+                                    Activez une protection supplémentaire
+                                </h6>
+
+                                <p class="text-muted mb-0">
+
+                                    Utilisez une application comme
+                                    Google Authenticator, Microsoft Authenticator
+                                    ou une autre application compatible pour
+                                    générer un code sécurisé.
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                        <div
+                            class="col-lg-4 text-lg-end"
+                        >
+
+                            {{-- ================================================= --}}
+                            {{-- BOUTON ORIGINAL --}}
+                            {{-- IMPORTANT : OUVRE LE QR CODE --}}
+                            {{-- ================================================= --}}
+
+                            <flux:modal.trigger
+                                name="two-factor-setup-modal"
+                            >
+
+                                <button
+                                    type="button"
+                                    class="btn btn-primary"
+                                    wire:click="$dispatch('start-two-factor-setup')"
+                                >
+
+                                    <i class="bi bi-qr-code me-1"></i>
+
+                                    Activer le 2FA
+
+                                </button>
+
+                            </flux:modal.trigger>
+
+                        </div>
+
+                    </div>
+
+
+                    {{-- ================================================= --}}
+                    {{-- IMPORTANT --}}
+                    {{-- CE COMPOSANT CONTIENT LE QR CODE ORIGINAL --}}
+                    {{-- NE PAS SUPPRIMER --}}
+                    {{-- ================================================= --}}
+
+                    <livewire:pages::settings.two-factor-setup-modal
+                        :requires-confirmation="$requiresConfirmation"
+                    />
+
+                @endif
+
             </div>
 
-            <div class="flex gap-3 justify-end">
-                <flux:button
-                    variant="outline"
-                    wire:click="closeDeleteModal"
-                >
-                    {{ __('Cancel') }}
-                </flux:button>
-                <flux:button
-                    variant="danger"
-                    wire:click="deletePasskey"
-                >
-                    {{ __('Remove passkey') }}
-                </flux:button>
-            </div>
         </div>
-    </flux:modal>
+
+    </div>
+
+@endif
+
+
+{{-- ========================================================= --}}
+{{-- PASSKEYS --}}
+{{-- ========================================================= --}}
+
+@if ($canManagePasskeys)
+
+    <div class="card mt-4">
+
+        <div class="card-body">
+
+            {{-- TITRE --}}
+
+            <div class="d-flex align-items-center pt-4 pb-3">
+
+                <div
+                    class="rounded-circle d-flex align-items-center justify-content-center me-3"
+                    style="
+                        width: 52px;
+                        height: 52px;
+                        background-color: #f6f9ff;
+                    "
+                >
+
+                    <i
+                        class="bi bi-key"
+                        style="
+                            font-size: 25px;
+                            color: #4154f1;
+                        "
+                    ></i>
+
+                </div>
+
+                <div>
+
+                    <h5 class="mb-1">
+                        Clés d'accès
+                    </h5>
+
+                    <p class="text-muted small mb-0">
+
+                        Connectez-vous de manière sécurisée
+                        sans utiliser votre mot de passe.
+
+                    </p>
+
+                </div>
+
+            </div>
+
+            <hr>
+
+            <div wire:cloak>
+
+                {{-- ================================================= --}}
+                {{-- LISTE PASSKEYS --}}
+                {{-- ================================================= --}}
+
+                @forelse ($passkeys as $passkey)
+
+                    <div
+                        class="border rounded p-3 mb-3"
+                        wire:key="passkey-{{ $passkey['id'] }}"
+                    >
+
+                        <div class="d-flex align-items-center">
+
+                            {{-- ICON --}}
+
+                            <div
+                                class="rounded-circle d-flex align-items-center justify-content-center me-3"
+                                style="
+                                    width: 45px;
+                                    height: 45px;
+                                    background-color: #f6f9ff;
+                                "
+                            >
+
+                                <i
+                                    class="bi bi-key-fill"
+                                    style="
+                                        color: #4154f1;
+                                        font-size: 20px;
+                                    "
+                                ></i>
+
+                            </div>
+
+
+                            {{-- INFORMATIONS --}}
+
+                            <div class="flex-grow-1">
+
+                                <div class="d-flex align-items-center">
+
+                                    <strong>
+                                        {{ $passkey['name'] }}
+                                    </strong>
+
+                                    @if ($passkey['authenticator'])
+
+                                        <span
+                                            class="badge bg-light text-dark ms-2"
+                                        >
+
+                                            {{ $passkey['authenticator'] }}
+
+                                        </span>
+
+                                    @endif
+
+                                </div>
+
+
+                                <small class="text-muted">
+
+                                    Ajoutée
+                                    {{ $passkey['created_at_diff'] }}
+
+                                    @if ($passkey['last_used_at_diff'])
+
+                                        <span class="mx-1">
+                                            •
+                                        </span>
+
+                                        Dernière utilisation
+                                        {{ $passkey['last_used_at_diff'] }}
+
+                                    @endif
+
+                                </small>
+
+                            </div>
+
+
+                            {{-- SUPPRIMER --}}
+
+                            <button
+                                type="button"
+                                class="btn btn-outline-danger btn-sm"
+                                wire:click="confirmDelete({{ $passkey['id'] }})"
+                            >
+
+                                <i class="bi bi-trash"></i>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                @empty
+
+                    <div class="text-center py-5">
+
+                        <div
+                            class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                            style="
+                                width: 65px;
+                                height: 65px;
+                                background-color: #f6f9ff;
+                            "
+                        >
+
+                            <i
+                                class="bi bi-key"
+                                style="
+                                    font-size: 30px;
+                                    color: #4154f1;
+                                "
+                            ></i>
+
+                        </div>
+
+                        <h6>
+                            Aucune clé d'accès
+                        </h6>
+
+                        <p class="text-muted small mb-0">
+
+                            Ajoutez une clé d'accès pour vous connecter
+                            sans utiliser votre mot de passe.
+
+                        </p>
+
+                    </div>
+
+                @endforelse
+
+
+                {{-- ================================================= --}}
+                {{-- AJOUT PASSKEY --}}
+                {{-- ================================================= --}}
+
+                <div class="border-top pt-4 mt-4">
+
+                    <h6>
+                        Ajouter une clé d'accès
+                    </h6>
+
+                    <p class="text-muted small">
+
+                        Vous pouvez utiliser votre téléphone,
+                        votre ordinateur ou un gestionnaire
+                        de mots de passe compatible.
+
+                    </p>
+
+                    <x-passkey-registration />
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+@endif
+
+
+{{-- ========================================================= --}}
+{{-- MODAL SUPPRESSION PASSKEY --}}
+{{-- ========================================================= --}}
+
+<flux:modal
+    name="delete-passkey-modal"
+    class="max-w-md md:min-w-md"
+    wire:model="showDeleteModal"
+    @close="closeDeleteModal"
+>
+
+    <div class="p-2">
+
+        <div class="text-center mb-4">
+
+            <div
+                class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                style="
+                    width: 60px;
+                    height: 60px;
+                    background-color: #fff1f1;
+                "
+            >
+
+                <i
+                    class="bi bi-exclamation-triangle"
+                    style="
+                        font-size: 28px;
+                        color: #dc3545;
+                    "
+                ></i>
+
+            </div>
+
+            <h5>
+                Supprimer cette clé ?
+            </h5>
+
+            <p class="text-muted small">
+
+                Voulez-vous vraiment supprimer la clé d'accès
+
+                <strong>
+                    "{{ $deletingPasskeyName }}"
+                </strong>
+
+                ?
+
+                <br>
+
+                Cette action est irréversible.
+
+            </p>
+
+        </div>
+
+
+        <div class="d-flex justify-content-center gap-2">
+
+            <button
+                type="button"
+                class="btn btn-light"
+                wire:click="closeDeleteModal"
+            >
+
+                Annuler
+
+            </button>
+
+
+            <button
+                type="button"
+                class="btn btn-danger"
+                wire:click="deletePasskey"
+                wire:loading.attr="disabled"
+            >
+
+                <span
+                    wire:loading.remove
+                    wire:target="deletePasskey"
+                >
+
+                    <i class="bi bi-trash me-1"></i>
+
+                    Supprimer
+
+                </span>
+
+
+                <span
+                    wire:loading
+                    wire:target="deletePasskey"
+                >
+
+                    <span
+                        class="spinner-border spinner-border-sm me-1"
+                    ></span>
+
+                    Suppression...
+
+                </span>
+
+            </button>
+
+        </div>
+
+    </div>
+
+</flux:modal>
+
 </section>

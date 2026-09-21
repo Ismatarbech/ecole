@@ -3,7 +3,7 @@
       <h1>Profile</h1>
       <nav>
         <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="/dashboard">Accueil</a></li>
+          <li class="breadcrumb-item"><a href="/">Accueil</a></li>
           <li class="breadcrumb-item">Eleve</li>
           <li class="breadcrumb-item active">Profile</li>
         </ol>
@@ -64,17 +64,13 @@
                                 Ministère de l'Éducation Nationale
                             </p>
 
-                            <div class="school-namei">
-                                Lycée / Collège Exemple
-                            </div>
-
                             <p>
                                 FICHE D'INSCRIPTION
                             </p>
 
                             <p>
                                 Année scolaire :
-                                <strong>{{ $eleve->anneeScolaire->scolaire_annee }}</strong>
+                                <strong>{{ $eleve->anneeScolaire?->scolaire_annee ?? '-' }}</strong>
                             </p>
 
                         </div>
@@ -141,25 +137,13 @@
 
                             <div class="info-itemi">
                                 <strong>Classe :</strong>
-                                {{ $eleve->classe->name }}
-
-                            </div>
-
-                            <div class="info-itemi">
-                                <strong>Année scolaire :</strong>
-                                {{ $eleve->anneeScolaire->scolaire_annee }}
+                                {{ $eleve->classe?->name ?? '-' }}
 
                             </div>
 
                             <div class="info-itemi">
                                 <strong>Date d'inscription :</strong>
-                                {{ $eleve->anneeScolaire->scolaire_annee }}
-
-                            </div>
-
-                            <div class="info-itemi">
-                                <strong>Contact élève :</strong>
-                                {{ $eleve->contact_eleve }}
+                                 {{ $eleve->date_inscription ?? '-' }}
 
                             </div>
 
@@ -178,17 +162,17 @@
 
                             <div class="info-itemi">
                                 <strong>Nom et prénom :</strong>
-                                {{ $eleve->prenom }}
+                                {{ $eleve->tuteur }}
 
                             </div>
 
                             <div class="info-itemi">
                                 <strong>Téléphone :</strong>
-                                {{ $eleve->contact_parent }}
+                                {{ $eleve->contact_tuteur }}
 
                             </div>
 
-                         
+                          
 
                         </div>
 
@@ -297,306 +281,284 @@
                </div>
 
                                   
-                  <div class="tab-pane fade profile-note" id="profile-note">
-                  <!-- Bouton impression -->
+      <div class="tab-pane fade profile-note" id="profile-note">
 
-                  <div class="actions">
-                      <a href="{{ route('inscription.pdf.bulletin', $eleve->id) }}" class="btn btn-primary">
-                          <i class="bi bi-file-earmark-pdf"></i>
-                          Telecharger
-                      </a>
-                  </div>
+    <!-- Bouton impression -->
+    <div class="actions">
+        <a href="{{ route('inscription.pdf.bulletin', $eleve->id) }}" class="btn btn-primary">
+            <i class="bi bi-file-earmark-pdf"></i>
+            Telecharger
+        </a>
+    </div>
 
+    <!-- Bulletin -->
+    <div class="bulletin-container">
 
-                  <!-- Bulletin -->
+        @foreach ($eleve->anneeScolaire->periodes->where('statut', 'active') as $periode)
 
-                  <div class="bulletin-container">
+            <!-- ========================= -->
+            <!-- TITRE PERIODE -->
+            <!-- ========================= -->
 
+            <div style="text-align:center; font-weight:bold; font-size:18px; margin:10px 0;">
+                {{ strtoupper($periode->type) }} {{ $periode->ordre }} - {{ $periode->nom }}
+            </div>
 
-                      <!-- ========================= -->
-                      <!-- EN-TÊTE -->
-                      <!-- ========================= -->
+            <!-- ========================= -->
+            <!-- EN-TÊTE -->
+            <!-- ========================= -->
 
-                      <div class="bulletin-header">
+            <div class="bulletin-header">
 
-                          <h4>RÉPUBLIQUE DU TCHAD</h4>
+                <h4>RÉPUBLIQUE DU TCHAD</h4>
 
-                          <p>
-                              <strong>Unité - Travail - Progrès</strong>
-                          </p>
+                <p>
+                    <strong>Unité - Travail - Progrès</strong>
+                </p>
 
-                          <div class="school-info">
+                <div class="school-info">
 
-                              Ministère de l'Éducation Nationale
-                              <br>
+                    Ministère de l'Éducation Nationale
+                    <br>
 
-                              <span class="school-name">
-                                  Lycée / Collège Exemple
-                              </span>
+                    Année scolaire :
+                    <strong>{{ $eleve->anneeScolaire?->scolaire_annee ?? '-' }}</strong>
 
-                              <br>
+                </div>
 
-                              Année scolaire :
-                              <strong>{{ $eleve->anneeScolaire?->scolaire_annee ?? '-' }}</strong>
+            </div>
 
-                          </div>
+            <!-- ========================= -->
+            <!-- INFORMATIONS ÉLÈVE -->
+            <!-- ========================= -->
 
-                      </div>
+            <h5 class="section-title">
+                Informations de l'élève
+            </h5>
 
+            <div class="student-info">
 
-                      <!-- ========================= -->
-                      <!-- INFORMATIONS ÉLÈVE -->
-                      <!-- ========================= -->
+                <div>
+                    <strong>Nom :</strong>
+                    {{ $eleve->nom }}
+                </div>
 
-                      <h5 class="section-title">
-                          Informations de l'élève
-                      </h5>
+                <div>
+                    <strong>Prénom :</strong>
+                    {{ $eleve->prenom }}
+                </div>
 
-
-                      <div class="student-info">
-
-                          <div>
-                              <strong>Nom :</strong>
-                              {{ $eleve->nom }}
-                          </div>
-
-                          <div>
-                              <strong>Prénom :</strong>
-                               {{ $eleve->prenom }}
-                          </div>
-
-                          <div>
-                              <strong>Classe :</strong>
-                              {{ $eleve->classe->name }}
-                          </div>
-
-                          <div>
-                              <strong>Matricule :</strong>
-                               {{ $eleve->matricule }}
-                          </div>
-
-                          <div>
-                              <strong>Date de naissance :</strong>
-                              {{ $eleve->naissance }}
-                          </div>
-
-                          <div>
-                              <strong>Effectif :</strong>
-                              45 élèves
-                          </div>
-
-                      </div>
-
-
-                      <!-- ========================= -->
-                      <!-- RÉSULTATS SCOLAIRES -->
-                      <!-- ========================= -->
-
-                      <h5 class="section-title">
-                          Résultats scolaires
-                      </h5>
-
-
-                      <table class="bulletin-table">
-
-                        <thead>
-                            <tr>
-                                <th>Matière</th>
-                                <th>Coefficient</th>
-                                <th>Devoir</th>
-                                <th>Composition</th>
-                                <th>Moyenne</th>
-                                <th>Observation</th>
-                            </tr>
-                        </thead>
-
-                     @php
-                        $totalPoints = 0;
-                        $totalCoefficients = 0;
-                        $totalgenerale = 0;
-                    @endphp
-
-                    <tbody>
-                        @forelse ($eleve->notes as $note)
-                            @php
-                                $devoir = (float) ($note->devoir ?? 0);
-                                $composition = (float) ($note->composition ?? 0);
-                                $coefficient = (float) ($note->matiere->coefficient ?? 0);
-
-                                $moyenneMatiere = (($devoir + $composition) / 2) * $coefficient;
-
-                                // total des moyennes de matières
-                                $totalPoints += $moyenneMatiere;
-
-                                // somme des coefficients
-                                $totalCoefficients += $coefficient;
-
-                                $totalgenerale = $totalPoints /  $totalCoefficients ;
-                            @endphp
-
-                            <tr>
-                                <td>
-                                    {{ $note->matiere->description ?? '-' }}
-                                </td>
-
-                                <td>
-                                    {{ $coefficient }}
-                                </td>
-
-                                <td>
-                                    {{ $note->devoir ?? '-' }}
-                                </td>
-
-                                <td>
-                                    {{ $note->composition ?? '-' }}
-                                </td>
-
-                                <td>
-                                    <strong>
-                                        {{ number_format($moyenneMatiere, 2, ',', ' ') }}
-                                    </strong>
-                                </td>
-
-                                <td>
-                                    @if ($moyenneMatiere >= 14)
-                                        <span class="badge bg-success">Bien</span>
-                                    @elseif ($moyenneMatiere >= 10)
-                                        <span class="badge bg-warning text-dark">Moyen</span>
-                                    @else
-                                        <span class="badge bg-danger">Insuffisant</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="text-center">
-                                    Aucune note enregistrée.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-
-
-
-
-                      <table class="bulletin-table">
-
-                          <thead>
-
-                              <tr>
-
-                                  <th>Total Points</th>
-
-                                  <th>Moyenne générale</th>
-
-                                  <th>Rang</th>
-
-                                  <th>Absences</th>
-
-                              </tr>
-
-                          </thead>
-
-
-                          <tbody>
-
-                              <tr>
-
-                                  <td>{{ number_format($totalPoints, 2, ',', ' ') }}</td>
-
-                                  <td>{{ number_format($totalgenerale, 2, ',', ' ') }}</td>
-
-
-                                  <td>5ème</td>
-
-                                  <td>2</td>
-
-                              </tr>
-
-                          </tbody>
-
-                      </table>
-
-
-                      <!-- ========================= -->
-                      <!-- APPRÉCIATION -->
-                      <!-- ========================= -->
-
-                      <h5 class="section-title">
-                          Appréciation générale
-                      </h5>
-
-
-                      <div class="appreciation">
-
-                          Élève sérieux et travailleur.
-                          <br>
-
-                          Les résultats sont satisfaisants.
-                          <br>
-
-                          Il doit continuer ses efforts.
-
-                      </div>
-
-
-                      <!-- ========================= -->
-                      <!-- SIGNATURES -->
-                      <!-- ========================= -->
-
-                      <div class="signature">
-
-
-                          <div>
-
-                              <strong>Professeur Principal</strong>
-
-                              <br><br><br>
-
-                              Signature
-
-                          </div>
-
-
-                          <div>
-
-                              <strong>Directeur / Proviseur</strong>
-
-                              <br><br><br>
-
-                              Signature
-
-                          </div>
-
-
-                          <div>
-
-                              <strong>Parent</strong>
-
-                              <br><br><br>
-
-                              Signature
-
-                          </div>
-
-
-                      </div>
-
-
-                      <!-- ========================= -->
-                      <!-- CACHET -->
-                      <!-- ========================= -->
-
-                      <div class="cachet">
-
-                          <br><br>
-
-                          <strong>Cachet de l'établissement</strong>
-
-                      </div>
-
-
-                  </div>
+                <div>
+                    <strong>Classe :</strong>
+                    {{ $eleve->classe?->name ?? '-' }}
+                </div>
+
+                <div>
+                    <strong>Matricule :</strong>
+                    {{ $eleve->matricule }}
+                </div>
+
+                <div>
+                    <strong>Date de naissance :</strong>
+                    {{ $eleve->naissance }}
+                </div>
+
+                <div>
+                    <strong>Effectif :</strong>
+                    {{ $effectif }} élèves
+                </div>
+
+            </div>
+
+            <!-- ========================= -->
+            <!-- RÉSULTATS SCOLAIRES -->
+            <!-- ========================= -->
+
+            <h5 class="section-title">
+                Résultats scolaires
+            </h5>
+
+            <table class="bulletin-table">
+
+                <thead>
+                    <tr>
+                        <th>Matière</th>
+                        <th>Devoir</th>
+                        <th>Composition</th>
+                        <th>Coefficient</th>
+                        <th>Moyenne</th>
+                        <th>Observation</th>
+                    </tr>
+                </thead>
+
+                @php
+                    $totalPoints = 0;
+                    $totalCoefficients = 0;
+                    $totalgenerale = 0;
+                    $moyenneNote = 0;
+                @endphp
+
+                <tbody>
+
+                    @forelse ($eleve->notes->where('periode_id', $periode->id) as $note)
+
+                        @php
+                            $devoir = (float) ($note->devoir ?? 0);
+                            $composition = (float) ($note->composition ?? 0);
+                            $coefficient = (float) ($note->matiere?->coefficient ?? 0);
+
+                            $moyenneMatiere = (($devoir + $composition) / 2) * $coefficient;
+
+                            $moyenneNote = (($devoir + $composition) / 2);
+
+                            $totalPoints += $moyenneMatiere;
+                            $totalCoefficients += $coefficient;
+
+                            $totalgenerale = $totalCoefficients > 0
+                                ? $totalPoints / $totalCoefficients
+                                : 0;
+                        @endphp
+
+                        <tr>
+                            <td>
+                                {{ $note->matiere?->description ?? $note->matiere?->nom ?? '-' }}
+                            </td>
+
+                            <td>{{ $note->devoir ?? '-' }}</td>
+
+                            <td>{{ $note->composition ?? '-' }}</td>
+
+                            <td>{{ $coefficient }}</td>
+
+                            <td>
+                                <strong>
+                                    {{ number_format($moyenneMatiere, 2, ',', ' ') }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                @if ($moyenneNote >= 18)
+                                    <span class="badge bg-success">Excellente</span>
+                                @elseif ($moyenneNote >= 16)
+                                    <span class="badge bg-warning text-dark">Tres bien</span>
+                                @elseif ($moyenneNote >= 14)
+                                    <span class="badge bg-warning text-dark">Bien</span>
+                                @elseif ($moyenneNote >= 12)
+                                    <span class="badge bg-warning text-dark">Assez bien</span>
+                                @elseif ($moyenneNote >= 11)
+                                    <span class="badge bg-warning text-dark">Passable</span>
+                                @elseif ($moyenneNote >= 10)
+                                    <span class="badge bg-warning text-dark">Moyenne</span>
+                                @elseif ($moyenneNote >= 8)
+                                    <span class="badge bg-warning text-dark">Insuffisant</span>
+                                @else
+                                    <span class="badge bg-danger">Tres insuffisant</span>
+                                @endif
+                            </td>
+                        </tr>
+
+                    @empty
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                Aucune note enregistrée.
+                            </td>
+                        </tr>
+                    @endforelse
+
+                </tbody>
+
+            </table>
+
+            <!-- ========================= -->
+            <!-- TOTAL -->
+            <!-- ========================= -->
+
+            <table class="bulletin-table">
+
+                <thead>
+                    <tr>
+                        <th>Total Points</th>
+                        <th>Moyenne générale</th>
+                        <th>Rang</th>
+                        <th>Absences</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td>{{ number_format($totalPoints, 2, ',', ' ') }}</td>
+                        <td>{{ number_format($totalgenerale, 2, ',', ' ') }}</td>
+                        <td>{{ $rang ? $rang . 'ème / ' . $effectif : '-' }}</td>
+                        <td>0</td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+            <!-- ========================= -->
+            <!-- APPRÉCIATION -->
+            <!-- ========================= -->
+
+            <h5 class="section-title">
+                Appréciation générale
+            </h5>
+
+            <div class="appreciation">
+
+                Élève sérieux et travailleur.
+                <br>
+
+                Les résultats sont satisfaisants.
+                <br>
+
+                Il doit continuer ses efforts.
+
+            </div>
+
+            <!-- ========================= -->
+            <!-- SIGNATURES -->
+            <!-- ========================= -->
+
+            <div class="signature">
+
+                <div>
+                    <strong>Professeur Principal</strong>
+                    <br><br><br>
+                    Signature
+                </div>
+
+                <div>
+                    <strong>Directeur / Proviseur</strong>
+                    <br><br><br>
+                    Signature
+                </div>
+
+                <div>
+                    <strong>Parent</strong>
+                    <br><br><br>
+                    Signature
+                </div>
+
+            </div>
+
+            <!-- ========================= -->
+            <!-- CACHET -->
+            <!-- ========================= -->
+
+            <div class="cachet">
+
+                <br><br>
+
+                <strong>Cachet de l'établissement</strong>
+
+            </div>
+
+            <hr style="margin:30px 0;">
+
+        @endforeach
+
+    </div>
+</div>
 
 
                   <!-- ========================= -->
@@ -636,6 +598,8 @@
                                 <strong>
                                     Unité - Travail - Progrès
                                 </strong>
+                                <br>       
+                                
 
                                 <div class="card-titlee">
                                     CARTE D'ÉLÈVE
@@ -688,7 +652,7 @@
 
                                     <div>
                                         <strong>Classe :</strong>
-                                        {{ $eleve->classe->name }}
+                                        {{ $eleve->classe?->name ?? '-' }}
                                     </div>
 
                                     <div>
@@ -699,7 +663,7 @@
 
                                     <div>
                                         <strong>Tél :</strong>
-                                        {{ $eleve->contact_eleve }}
+                                        {{ $eleve->contact_parent ?? '-' }}
                                     </div>
 
                                 </div>
@@ -716,7 +680,7 @@
 
                             <div class="card-footere">
 
-                                Lycée / Collège Exemple
+                                {{ $etablissement?->nom ?? 'Établissement scolaire' }}
                                 -
                                 Carte valable pour l'année scolaire
 
@@ -742,7 +706,7 @@
 
                             <div style="padding: 15px; font-size: 11px; line-height: 1.7 text-center;">
 
-                                <strong class="card-titlee">College et lycée : .........</strong>
+                                <strong class="card-titlee">{{ $etablissement?->nom ?? "l'etablissement" }}</strong>
                                 <br>
                                 <br>
                                 <br>

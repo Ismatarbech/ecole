@@ -1,80 +1,94 @@
-<!DOCTYPE html>
-<html lang="en">
+<div class="container py-4">
 
-<head>
-  <meta charset="utf-8">
-  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    {{-- SUCCESS --}}
+    @if (session()->has('success'))
+        <div class="alert alert-success alert-dismissible fade show">
+            {{ session('success') }}
+            <button class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
 
-  <title>Dashboard - NiceAdmin Bootstrap Template</title>
-  <meta content="" name="description">
-  <meta content="" name="keywords">
+    {{-- ERROR --}}
+    @if (session()->has('error'))
+        <div class="alert alert-danger alert-dismissible fade show">
+            {{ session('error') }}
+            <button class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
 
-  <!-- Favicons -->
-  <link href="/assets/img/favicon.png" rel="icon">
-  <link href="/assets/img/apple-touch-icon.png" rel="apple-touch-icon">
 
-  <!-- Google Fonts -->
-  <link href="https://fonts.gstatic.com" rel="preconnect">
-  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+    <div class="card shadow-sm">
 
-  <!-- Vendor CSS Files -->
-  <link href="/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-  <link href="/assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-  <link href="/assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
-  <link href="/assets/vendor/quill/quill.snow.css" rel="stylesheet">
-  <link href="/assets/vendor/quill/quill.bubble.css" rel="stylesheet">
-  <link href="/assets/vendor/remixicon/remixicon.css" rel="stylesheet">
-  <link href="/assets/vendor/simple-datatables/style.css" rel="stylesheet">
+        <div class="card-body">
 
-  <!-- Template Main CSS File -->
-  <link href="/assets/css/style.css" rel="stylesheet">
+            <h4 class="card-title">
+                📅 Année scolaire
+            </h4>
 
-</head>
+            <p class="text-muted">
+                Format recommandé : 2025-2026
+            </p>
 
-<body>
+            <form wire:submit.prevent="save">
 
-<div class="w-2/2">
-        <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Ajouter une année </h5>
+                {{-- INPUT --}}
+                <div class="mb-3">
 
-              <!-- General Form Elements -->
-                <form method="POST" wire:submit.prevent="save">
-                 @csrf
+                    <label class="form-label fw-bold">
+                        Année scolaire
+                    </label>
 
-                <div class="row mb-3">
-                  <label for="inputText" class="col-sm-2 col-form-label">Année scolaire</label>
-                  <div class="col-sm-10">
-                    <input type="text" class="form-control" wire:model='annee' wire:model="annee">
-                  </div>
-                </div>
-                <div class="row mb-3">
-                  <label class="col-sm-2 col-form-label"></label>
-                  <div class="col-sm-10">
-                    <button type="submit" class="btn btn-primary">Enregistrer</button>
-                  </div>
+                    <input type="text"
+                           class="form-control form-control-lg"
+                           wire:model="annee"
+                           placeholder="Ex: 2025-2026">
+
+                    <small class="text-muted">
+                        ✔ Vous pouvez écrire: 2025-2026 / 2025 / 2026 / 2025 2026
+                    </small>
+
                 </div>
 
-              </form><!-- End General Form Elements -->
 
-            </div>
-          </div>
+                {{-- PREVIEW (SANS ERREUR) --}}
+                @if ($annee)
+                    <div class="alert alert-info">
+                        <strong>Format final :</strong>
+                        <span class="badge bg-primary">
+                            {{ preg_replace('/\s+/', '', str_replace('/', '-', $annee)) }}
+                        </span>
+                    </div>
+                @endif
 
-  <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
 
-  <!-- Vendor JS Files -->
-  <script src="assets/vendor/apexcharts/apexcharts.min.js"></script>
-  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="assets/vendor/chart.js/chart.umd.js"></script>
-  <script src="assets/vendor/echarts/echarts.min.js"></script>
-  <script src="assets/vendor/quill/quill.js"></script>
-  <script src="assets/vendor/simple-datatables/simple-datatables.js"></script>
-  <script src="assets/vendor/tinymce/tinymce.min.js"></script>
-  <script src="assets/vendor/php-email-form/validate.js"></script>
+                {{-- INFO --}}
+                <div class="alert alert-warning">
+                    ⚠ Une seule année scolaire peut exister dans le système.
+                </div>
 
-  <!-- Template Main JS File -->
-  <script src="assets/js/main.js"></script>
 
-</body>
+                {{-- BUTTON --}}
+                <div class="text-end">
 
-</html>
+                    <button class="btn btn-primary btn-lg"
+                            type="submit"
+                            wire:loading.attr="disabled">
+
+                        <span wire:loading.remove>
+                            ➕ Créer
+                        </span>
+
+                        <span wire:loading>
+                            Traitement...
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>

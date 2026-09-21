@@ -51,7 +51,7 @@
             <ol class="breadcrumb">
 
                 <li class="breadcrumb-item">
-                    <a href="{{ route('dashboard') }}">
+                    <a href="/">
                         Accueil
                     </a>
                 </li>
@@ -205,6 +205,7 @@
                                     @canany(['delete_etablissements'])
 
                                         <flux:button
+                                            wire:confirm="Etes vous vraiment supprimer cet etablissement ?"
                                             wire:click="deleteEtablissement({{ $etablissement->id }})"
                                            variant="danger" color="red" icon:trailing="trash"></flux:button>
                                     @endcanany
@@ -236,6 +237,9 @@
                     </tbody>
 
                 </table>
+                <div class="d-flex justify-content-center mt-3 pagination-school">
+                    {{ $etablissements->links() }}
+                </div>
 
             </div>
 

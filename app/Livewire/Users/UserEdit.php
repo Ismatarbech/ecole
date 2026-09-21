@@ -13,16 +13,21 @@ class UserEdit extends Component
 
     public string $name = '';
     public string $email = '';
-    public string|null $password = null;
+    public ?string $password = null;
+
     public array $allRoles = [];
     public array $selectedRoles = [];
-
 
     protected function rules(): array
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required','string','email','max:255',Rule::unique('users', 'email')->ignore($this->user->id)],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($this->user->id),
+            ],
             'password' => ['nullable', 'string', 'min:8'],
         ];
     }
@@ -30,21 +35,46 @@ class UserEdit extends Component
     public function mount(User $user)
     {
         $this->user = $user;
+
         $this->name = $user->name;
         $this->email = $user->email;
-        $this->allRoles = Role::pluck('name')->toArray();
-        $this->selectedRoles = $user->roles()->pluck('name')->toArray();
+
+        // 🔥 on exclut les rôles sensibles
+        $this->allRoles = Role::whereNotIn('name', [
+            'super-admin',
+            'admin'
+        ])->pluck('name')->toArray();
+
+        // 🔥 sécurité: on filtre aussi les rôles existants
+        $this->selectedRoles = $user->roles()
+            ->pluck('name')
+            ->filter(fn($role) => !in_array($role, ['super-admin', 'admin']))
+            ->toArray();
     }
 
     public function updateUser()
     {
         $this->validate();
 
+        // 🔐 sécurité backend
+        if (!auth()->user() || !auth()->user()->hasRole('super-admin')) {
+            session()->flash('error', 'Accès refusé.');
+            return;
+        }
+
+        // 🔥 blocage injection rôle admin
+        if (collect($this->selectedRoles)->intersect(['admin', 'super-admin'])->count()) {
+            session()->flash('error', 'Rôle non autorisé.');
+            return;
+        }
+
         try {
             $this->user->update([
                 'name' => $this->name,
                 'email' => $this->email,
-                'password' => empty($this->password) ? $this->user->password : bcrypt($this->password),
+                'password' => $this->password
+                    ? bcrypt($this->password)
+                    : $this->user->password,
             ]);
 
             $this->user->syncRoles($this->selectedRoles);
@@ -52,8 +82,11 @@ class UserEdit extends Component
             return redirect()
                 ->route('users.index')
                 ->with('success', 'Utilisateur modifié avec succès.');
+
         } catch (\Throwable $exception) {
-            session()->flash('error', "L'utilisateur n'a pas pu être modifié.");
+
+            session()->flash('error', "Erreur lors de la modification.");
+            return;
         }
     }
 

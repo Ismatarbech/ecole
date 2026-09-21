@@ -61,6 +61,123 @@ select:focus[data-flux-control] {
     @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
 }
 
+.pagination-school nav {
+    display: flex;
+    justify-content: center;
+}
+
+.pagination-school nav > div:first-child {
+    display: none;
+}
+
+.pagination-school nav > div:last-child {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.pagination-school a,
+.pagination-school span {
+    display: inline-flex;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.65rem;
+    border: 1px solid #d9e2f3;
+    border-radius: 0.5rem;
+    color: #4154f1;
+    background: #fff;
+    font-size: 0.875rem;
+    text-decoration: none;
+}
+
+.pagination-school a:hover {
+    color: #fff;
+    background: #4154f1;
+}
+
+.pagination-school span[aria-current="page"] {
+    color: #fff;
+    border-color: #4154f1;
+    background: #4154f1;
+}
+
+.pagination-school span[aria-disabled="true"] {
+    color: #aab4c5;
+    background: #f6f8fb;
+}
+
+.account-settings-page {
+    display: flex;
+    justify-content: center;
+    padding: 1.5rem 0;
+}
+
+.account-settings-card {
+    display: flex;
+    width: min(100%, 980px);
+    overflow: hidden;
+    border: 0;
+    border-radius: 0.5rem;
+    background: #fff;
+    box-shadow: 0 0.5rem 1.5rem rgb(1 41 112 / 0.08);
+}
+
+.account-settings-nav {
+    width: 220px;
+    flex: 0 0 220px;
+    padding: 2rem 1.25rem;
+    background: #f7f9fc;
+    border-right: 1px solid #e9eef7;
+}
+
+.account-settings-content {
+    min-width: 0;
+    flex: 1;
+    padding: 2rem 2.5rem;
+}
+
+.account-settings-heading {
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid #edf0f5;
+}
+
+.account-settings-form {
+    width: min(100%, 560px);
+    margin-top: 1.5rem;
+}
+
+.account-settings-form form {
+    display: grid;
+    gap: 1rem;
+}
+
+.account-settings-form button[type="submit"] {
+    min-width: 150px;
+}
+
+@media (max-width: 767.98px) {
+    .account-settings-page {
+        padding: 0.75rem 0;
+    }
+
+    .account-settings-card {
+        display: block;
+    }
+
+    .account-settings-nav {
+        width: auto;
+        padding: 1rem;
+        border-right: 0;
+        border-bottom: 1px solid #e9eef7;
+    }
+
+    .account-settings-content {
+        padding: 1.5rem 1rem;
+    }
+}
+
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */

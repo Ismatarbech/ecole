@@ -8,6 +8,34 @@ use Livewire\Component;
 
 class NiveauxCreate extends Component
 {
+    
+    public function deleteNiveau($niveauId)
+    {
+        $this->successMessage = '';
+        $this->errorMessage = '';
+
+        try {
+
+            $niveau = Niveaux::find($niveauId);
+
+            if (!$niveau) {
+                $this->errorMessage = "L'niveau n'existe pas.";
+                return;
+            }
+
+            $niveau = $niveau->name;
+
+            $niveau->delete();
+
+            $this->successMessage =
+                "Le niveau « {$niveau} » a été supprimé avec succès.";
+
+        } catch (\Exception $e) {
+
+            $this->errorMessage =
+                "Le niveau n'a pas pu être supprimé.";
+        }
+    }
     public $code = '';
     public $libelle = '';
     public $montant = '';

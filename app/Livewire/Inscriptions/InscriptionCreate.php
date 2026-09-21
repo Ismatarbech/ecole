@@ -2,10 +2,10 @@
 
 namespace App\Livewire\Inscriptions;
 
-use App\Models\AnneeScolaire;
-use App\Models\Classe;
 use App\Models\Eleve;
+use App\Models\Classe;
 use App\Models\Niveau;
+use App\Models\AnneeScolaire;
 use App\Models\Paiement;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -23,7 +23,6 @@ class InscriptionCreate extends Component
 
     public $step = 1;
 
-
     /*
     |--------------------------------------------------------------------------
     | INFORMATIONS ELEVE
@@ -31,23 +30,23 @@ class InscriptionCreate extends Component
     */
 
     public $matricule;
-
     public $nom;
-
     public $prenom;
-
     public $naissance;
-
     public $sexe;
-
     public $lieu;
-
-    public $contact_eleve;
-
     public $contact_parent;
+    public $date_inscription;
+    public $tuteur;
+    public $contact_tuteur;
+
+    /*
+    |--------------------------------------------------------------------------
+    | PHOTO
+    |--------------------------------------------------------------------------
+    */
 
     public $photo;
-
 
     /*
     |--------------------------------------------------------------------------
@@ -56,11 +55,8 @@ class InscriptionCreate extends Component
     */
 
     public $annee_scolaire_id;
-
     public $niveau_id;
-
     public $classe_id;
-
 
     /*
     |--------------------------------------------------------------------------
@@ -69,13 +65,56 @@ class InscriptionCreate extends Component
     */
 
     public $frais_scolarite = 0;
-
     public $montant = 0;
-
     public $mode_paiement = 'Especes';
-
     public $date_paiement;
 
+    /*
+    |--------------------------------------------------------------------------
+    | MESSAGES
+    |--------------------------------------------------------------------------
+    */
+
+    protected $messages = [
+        'nom.required' => 'Le nom est obligatoire.',
+        'prenom.required' => 'Le prénom est obligatoire.',
+        'naissance.required' => 'La date de naissance est obligatoire.',
+        'sexe.required' => 'Veuillez sélectionner le sexe.',
+        'lieu.required' => 'Le lieu de naissance est obligatoire.',
+
+        'date_inscription.required' =>
+            'La date d\'inscription est obligatoire.',
+
+        'annee_scolaire_id.required' =>
+            'Veuillez sélectionner une année scolaire.',
+
+        'niveau_id.required' =>
+            'Veuillez sélectionner un niveau.',
+
+        'classe_id.required' =>
+            'Veuillez sélectionner une classe.',
+
+        'montant.required' =>
+            'Le montant est obligatoire.',
+
+        'montant.numeric' =>
+            'Le montant doit être un nombre.',
+
+        'montant.max' =>
+            'Le montant ne peut pas dépasser les frais de scolarité.',
+
+        'date_paiement.required' =>
+            'La date de paiement est obligatoire.',
+
+        'photo.image' =>
+            'Le fichier sélectionné doit être une image.',
+
+        'photo.required' =>
+            'La photo de l\'élève est obligatoire.',
+
+        'photo.max' =>
+            'La photo ne doit pas dépasser 4 Mo.',
+    ];
 
     /*
     |--------------------------------------------------------------------------
@@ -84,97 +123,142 @@ class InscriptionCreate extends Component
     */
 
     public function mount()
-{
-    $annee = AnneeScolaire::where('status', 'active')->first();
+    {
+        $annee = AnneeScolaire::where('status', 'active')->first();
 
-    if (!$annee) {
-        abort(404, 'Aucune année scolaire active.');
-        echo'annee ';
+        if (!$annee) {
+            session()->flash(
+                'error',
+                'Aucune année scolaire active n\'a été trouvée.'
+            );
+
+            return;
+        }
+
+        $this->annee_scolaire_id = $annee->id;
+
+        $this->date_inscription = now()->format('Y-m-d');
+
+        $this->date_paiement = now()->format('Y-m-d');
+
+        $this->montant = 0;
+
+        $this->frais_scolarite = 0;
     }
 
-    $this->annee_scolaire_id = $annee->id;
-
-    $this->date_paiement = now()->format('Y-m-d');
-
-    $this->genererMatricule();
-}
-
-
     /*
     |--------------------------------------------------------------------------
-    | GENERER MATRICULE
+    | CHANGEMENT NIVEAU
     |--------------------------------------------------------------------------
     */
 
-            public function genererMatricule()
-            {
-                if (!$this->niveau_id) {
-                    $this->matricule = null;
-                    return;
-                }
+    public function updatedNiveauId($value)
+    {
+        $this->classe_id = null;
 
-                $annee = AnneeScolaire::find($this->annee_scolaire_id);
-                $niveau = Niveau::find($this->niveau_id);
+        $this->matricule = null;
 
-                if (!$annee || !$niveau) {
-                    $this->matricule = null;
-                    return;
-                }
+        $this->montant = 0;
 
-                // Remplacez annee_debut par le vrai nom de votre colonne si nécessaire
-                $anneeCode = $annee->annee_debut ?? now()->format('Y');
-
-                $codeNiveau = strtoupper($niveau->code);
-
-                $dernier = Eleve::latest('id')->first();
-                $numero = $dernier ? $dernier->id + 1 : 1;
-
-                $this->matricule =
-                    $anneeCode .
-                    $codeNiveau .
-                    str_pad($numero, 5, '0', STR_PAD_LEFT);
-}
-
-
-
-// ...existing code...
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | QUAND LE NIVEAU CHANGE
-    |--------------------------------------------------------------------------
-    */
-   public function updatedNiveauId($value)
-{
-    $this->classe_id = null;
-
-    $this->genererMatricule();
-
-        // Aucun niveau sélectionné
-        if (!$value) {
-            $this->frais_scolarite = 0;
-            $this->montant = 0;
-
-            return;
-        }
-
-        // Récupérer le niveau
         $niveau = Niveau::find($value);
 
-        if (!$niveau) {
+        if ($niveau) {
+            $this->frais_scolarite = (float) $niveau->montant;
+        } else {
             $this->frais_scolarite = 0;
-            $this->montant = 0;
+        }
+    }
 
+    /*
+    |--------------------------------------------------------------------------
+    | CHANGEMENT CLASSE
+    |--------------------------------------------------------------------------
+    */
+
+    public function updatedClasseId($value)
+    {
+        if ($value) {
+            $this->genererMatricule();
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | GENERATION MATRICULE
+    |--------------------------------------------------------------------------
+    */
+
+    public function genererMatricule()
+    {
+        if (!$this->classe_id) {
             return;
         }
 
-        // Le montant dans la table niveaux
-        // représente le frais total de scolarité
-        $this->frais_scolarite = (float) $niveau->montant;
+        $classe = Classe::find($this->classe_id);
 
-        // Par défaut, l'élève paie la totalité
-        $this->montant = $this->frais_scolarite;
+        if (!$classe) {
+            return;
+        }
+
+        $annee = AnneeScolaire::find($this->annee_scolaire_id);
+
+        $anneeCode = now()->format('Y');
+
+        if ($annee) {
+            if (!empty($annee->annee_debut)) {
+                $anneeCode = $annee->annee_debut;
+            } elseif (!empty($annee->current_annee)) {
+                $anneeCode = $annee->current_annee;
+            }
+        }
+
+        /*
+        | On prend le code de la classe si disponible.
+        */
+
+        $codeClasse = $classe->code ?? null;
+
+        /*
+        | Sinon on utilise le nom.
+        */
+
+        if (!$codeClasse) {
+            $codeClasse = $classe->name ?? 'CL';
+        }
+
+        /*
+        | Nettoyage du code.
+        */
+
+        $codeClasse = strtoupper(
+            preg_replace(
+                '/[^AZa-z0-9]/',
+                '',
+                $codeClasse
+            )
+        );
+
+        /*
+        | Dernier élève.
+        */
+
+        $dernierEleve = Eleve::latest('id')->first();
+
+        $numero = $dernierEleve
+            ? $dernierEleve->id + 1
+            : 1;
+
+        $this->matricule =
+            $anneeCode .
+            '-' .
+            $codeClasse .
+            '-' .
+            str_pad(
+                $numero,
+                4,
+                '0',
+                STR_PAD_LEFT
+            );
     }
 
     /*
@@ -185,103 +269,76 @@ class InscriptionCreate extends Component
 
     public function getResteProperty()
     {
-        return max(0,(float) $this->frais_scolarite - (float) $this->montant);
+        return max(
+            0,
+            (float) $this->frais_scolarite
+            -
+            (float) $this->montant
+        );
     }
-
 
     /*
     |--------------------------------------------------------------------------
-    | SUIVANT
+    | ETAPE 1 -> ETAPE 2
     |--------------------------------------------------------------------------
     */
 
     public function suivant()
     {
-        /*
-        | Validation étape 1
-        */
-
         $this->validate([
-                'matricule' => [
-                'required',
-                'string',
-                'max:2048',
-                'unique:eleves,matricule',
-            ],
-            'nom' => [
-                'required',
-                'string',
-                'max:100',
-            ],
+            'nom' => 
+                'required|string|max:255',
+            
+            'prenom' => 
+                'required|string|max:255',
+            
+            'naissance' => 
+                'required|date',
+            
+            'sexe' => 
+                'required|in:M,F',
+            
+            'lieu' => 
+                'required|string|max:255',
 
-            'prenom' => [
-                'required',
-                'string',
-                'max:100',
-            ],
+            'contact_parent' =>
+                'nullable|string|max:30',
 
-            'naissance' => [
-                'required',
-                'date',
-            ],
+            'date_inscription' =>
+                'required|date',
 
-            'sexe' => [
-                'required',
-                'in:M,F',
-            ],
+            'annee_scolaire_id' =>
+                'required|exists:annee_scolaires,id',
 
-            'lieu' => [
-                'nullable',
-                'string',
-                'max:150',
-            ],
+            'niveau_id' =>
+                'required|exists:niveaux,id',
 
-            'contact_eleve' => [
-                'nullable',
-                'string',
-                'max:30',
-            ],
+            'classe_id' =>
+                'required|exists:classes,id',
 
-            'contact_parent' => [
-                'required',
-                'string',
-                'max:30',
-            ],
+            'tuteur' => 
+                'nullable|string|max:255',
 
-            'photo' => [
-                'nullable',
-                'image',
-                'max:2048',
-            ],
-
-            'annee_scolaire_id' => [
-                'required',
-                'exists:annee_scolaires,id',
-            ],
-
-            'niveau_id' => [
-                'required',
-                'exists:niveaux,id',
-            ],
-
-            'classe_id' => [
-                'required',
-                'exists:classes,id',
-            ],
+            'contact_tuteur' =>
+                'nullable|string|max:30',
         ]);
 
-
         /*
-        | Vérifier que la classe appartient
-        | au niveau sélectionné
+        | Vérification niveau / classe
         */
 
-    
-        $classe = Classe::where('id', $this->classe_id)
-            ->where('niveau_id', $this->niveau_id)
-            ->first();
+        $classe = Classe::find($this->classe_id);
 
         if (!$classe) {
+            $this->addError(
+                'classe_id',
+                'La classe sélectionnée est invalide.'
+            );
+
+            return;
+        }
+
+        if ($classe->niveau_id != $this->niveau_id) {
             $this->addError(
                 'classe_id',
                 'Cette classe ne correspond pas au niveau sélectionné.'
@@ -290,39 +347,68 @@ class InscriptionCreate extends Component
             return;
         }
 
-
         /*
-        | Récupérer les frais du niveau
+        | Récupération des frais
         */
 
-        $niveau = Niveau::findOrFail($this->niveau_id);
+        $niveau = Niveau::find($this->niveau_id);
 
-        // Frais total provenant de la table niveaux
-        $this->frais_scolarite = (float) $niveau->montant;
-
-        // Montant payé par défaut = totalité des frais
-        $this->montant = $this->frais_scolarite;
-
+        if ($niveau) {
+            $this->frais_scolarite =
+                (float) $niveau->montant;
+        }
 
         /*
-        | Aller à l'étape 2
+        | Matricule
         */
+
+        if (!$this->matricule) {
+            $this->genererMatricule();
+        }
+
+        $this->montant = 0;
 
         $this->step = 2;
     }
 
-
     /*
     |--------------------------------------------------------------------------
-    | PRECEDENT
+    | ETAPE 2 -> ETAPE 3
     |--------------------------------------------------------------------------
     */
 
-    public function precedent()
+    public function allerRecapitulatif()
     {
-        $this->step = 1;
+        $this->validate([
+            'montant' => [
+                'required',
+                'numeric',
+                'min:0',
+                'max:' . $this->frais_scolarite,
+            ],
+
+            'mode_paiement' =>
+                'required|in:Especes,Mobile Money,Virement,Cheque',
+
+            'date_paiement' =>
+                'required|date',
+        ]);
+
+        $this->step = 3;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | RETOUR
+    |--------------------------------------------------------------------------
+    */
+
+    public function retour()
+    {
+        if ($this->step > 1) {
+            $this->step--;
+        }
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -332,73 +418,34 @@ class InscriptionCreate extends Component
 
     public function enregistrer()
     {
-        /*
-        | Validation paiement
-        */
-
         $this->validate([
-        'montant' => [
-            'required',
-            'numeric',
-            'min:0',
-            'max:' . $this->frais_scolarite,
-        ],
+            'photo' => 'required|image|max:4096',
+        ]);
 
-        'mode_paiement' => [
-            'required',
-            'in:Especes,Mobile Money,Virement,Cheque',
-        ],
-
-        'date_paiement' => [
-            'required',
-            'date',
-        ],
-    ]);
-
-
-        /*
-        | Vérifier la classe
-        */
-
-        $classe = Classe::where('id', $this->classe_id)
-            ->where('niveau_id', $this->niveau_id)
-            ->firstOrFail();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | TRANSACTION
-        |--------------------------------------------------------------------------
-        |
-        | Élève + paiement sont enregistrés ensemble.
-        |
-        */
-
-        $eleve = DB::transaction(function () use ($classe) {
+        DB::transaction(function () {
 
             /*
+            |--------------------------------------------------------------------------
             | PHOTO
+            |--------------------------------------------------------------------------
             */
 
             $photoPath = null;
 
             if ($this->photo) {
-
                 $photoPath = $this->photo->store(
                     'eleves',
                     'public'
                 );
             }
 
-
             /*
             |--------------------------------------------------------------------------
-            | CREER ELEVE
+            | ELEVE
             |--------------------------------------------------------------------------
             */
 
             $eleve = Eleve::create([
-
                 'matricule' =>
                     $this->matricule,
 
@@ -417,34 +464,38 @@ class InscriptionCreate extends Component
                 'lieu' =>
                     $this->lieu,
 
-                'contact_eleve' =>
-                    $this->contact_eleve,
-
                 'contact_parent' =>
                     $this->contact_parent,
 
-                'classe_id' =>
-                    $classe->id,
+                'tuteur' =>
+                    $this->tuteur,
+                
+                'contact_tuteur' =>
+                    $this->contact_tuteur ,
 
-                'annee_scolaire_id' =>
-                    $this->annee_scolaire_id,
+                'date_inscription' =>
+                    $this->date_inscription,
 
                 'photo' =>
                     $photoPath,
 
-                'date_inscription' =>
-                    now()->format('Y-m-d'),
-            ]);
+                'annee_scolaire_id' =>
+                    $this->annee_scolaire_id,
 
+                'niveau_id' =>
+                    $this->niveau_id,
+
+                'classe_id' =>
+                    $this->classe_id,
+            ]);
 
             /*
             |--------------------------------------------------------------------------
-            | CREER PAIEMENT
+            | PAIEMENT
             |--------------------------------------------------------------------------
             */
 
             Paiement::create([
-
                 'eleve_id' =>
                     $eleve->id,
 
@@ -452,45 +503,28 @@ class InscriptionCreate extends Component
                     $this->annee_scolaire_id,
 
                 'classe_id' =>
-                    $classe->id,
+                    $this->classe_id,
 
                 'montant' =>
-                     $this->montant,
+                    $this->montant,
 
                 'mode_paiement' =>
                     $this->mode_paiement,
 
-                'date_paiement' => 
+                'date_paiement' =>
                     $this->date_paiement,
             ]);
-
-
-            return $eleve;
         });
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | MESSAGE
-        |--------------------------------------------------------------------------
-        */
 
         session()->flash(
             'success',
-            'Élève inscrit et paiement enregistré avec succès.'
+            'L\'élève a été inscrit avec succès.'
         );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | REDIRECTION
-        |--------------------------------------------------------------------------
-        */
-
-        return redirect()->route('inscription.index')->with('success', 'Année scolaire créée avec succès.');
-
+        return redirect()->route(
+            'inscription.index'
+        );
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -499,30 +533,32 @@ class InscriptionCreate extends Component
     */
 
     public function render()
-{
-    $niveaux = Niveau::orderBy('code')->get();
+    {
+        $niveaux = Niveau::orderBy('code')->get();
 
-    $classes = collect();
+        $classes = collect();
 
-    if (!empty($this->niveau_id)) {
+        if ($this->niveau_id) {
 
-        $classes = Classe::where(
-            'niveau_id',
-            $this->niveau_id
-        )
-        ->orderBy('name')
+            $classes = Classe::where(
+                'niveau_id',
+                $this->niveau_id
+            )
+            ->orderBy('name')
+            ->get();
+        }
+     
+        $annees = AnneeScolaire::where('status', 'active')
+        ->orderByDesc('id')
         ->get();
+
+        return view(
+            'inscriptions.inscription-create',
+            compact(
+                'niveaux',
+                'classes',
+                'annees'
+            )
+        );
     }
-
-    $annees = AnneeScolaire::orderByDesc('id')->get();
-
-    return view(
-        'inscriptions.inscription-create',
-        [
-            'niveaux' => $niveaux,
-            'classes' => $classes,
-            'annees' => $annees,
-        ]
-    );
-}
 }

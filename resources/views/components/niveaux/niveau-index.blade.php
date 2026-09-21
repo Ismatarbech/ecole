@@ -1,56 +1,23 @@
 <div>
 
     {{-- =====================================================
-        MESSAGE DE SUCCÈS
+        MESSAGES
     ====================================================== --}}
 
     @if (session()->has('message'))
-
-        <div
-            class="alert alert-success alert-dismissible fade show"
-            role="alert"
-        >
-
+        <div class="alert alert-success alert-dismissible fade show">
             <i class="bi bi-check-circle me-1"></i>
-
             {{ session('message') }}
-
-            <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="alert"
-                aria-label="Close">
-            </button>
-
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-
     @endif
 
-
-    {{-- =====================================================
-        MESSAGE D'ERREUR
-    ====================================================== --}}
-
     @if (session()->has('error'))
-
-        <div
-            class="alert alert-danger alert-dismissible fade show"
-            role="alert"
-        >
-
+        <div class="alert alert-danger alert-dismissible fade show">
             <i class="bi bi-exclamation-triangle me-1"></i>
-
             {{ session('error') }}
-
-            <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="alert"
-                aria-label="Close">
-            </button>
-
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-
     @endif
 
 
@@ -59,60 +26,47 @@
     ====================================================== --}}
 
     <div class="pagetitle">
-
         <h1>Niveaux</h1>
 
         <nav>
-
             <ol class="breadcrumb">
-
-                <li class="breadcrumb-item">
-
-                    <a href="{{ url('/dashbord') }}">
-                        Accueil
-                    </a>
-
-                </li>
-
-                <li class="breadcrumb-item active">
-                    Niveaux
-                </li>
-
+                <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+                <li class="breadcrumb-item active">Niveaux</li>
             </ol>
-
         </nav>
-
     </div>
 
 
     {{-- =====================================================
-        BOUTON AJOUTER
+        ACTIONS
     ====================================================== --}}
 
     <div class="d-flex justify-content-end mb-3">
+
         <div class="input-group me-3 index-search" style="max-width: 360px;">
-            <span class="input-group-text bg-primary text-white"><i class="bi bi-search"></i></span>
-            <input type="search" class="form-control border-primary" wire:model.live="search" placeholder="Rechercher un niveau...">
+            <span class="input-group-text bg-primary text-white">
+                <i class="bi bi-search"></i>
+            </span>
+
+            <input type="search"
+                   class="form-control border-primary"
+                   wire:model.live="search"
+                   placeholder="Rechercher un niveau...">
         </div>
 
         @canany(['create_niveaux'])
-
             <flux:button
                 href="{{ route('niveaux.create') }}"
-                icon="plus"
-            >
-
-                Ajouter un niveau
-
+                icon="user-plus">
+                Créer un niveau
             </flux:button>
-
         @endcanany
 
     </div>
 
 
     {{-- =====================================================
-        TABLEAU
+        TABLE
     ====================================================== --}}
 
     <div class="col-12">
@@ -122,46 +76,20 @@
             <div class="card-body">
 
                 <h5 class="card-title">
-
                     Liste des niveaux
-
                 </h5>
-
 
                 <table class="table table-borderless datatable">
 
                     <thead>
-
                         <tr>
-
-                            <th scope="col">
-                                ID
-                            </th>
-
-                            <th scope="col">
-                                Code
-                            </th>
-
-                            <th scope="col">
-                                Libellé
-                            </th>
-
-                            <th scope="col">
-                                Montant
-                            </th>
-
-                            <th scope="col">
-                                Année scolaire
-                            </th>
-
-                            <th scope="col">
-                                Actions
-                            </th>
-
+                            <th>Code</th>
+                            <th>Libellé</th>
+                            <th>Montant</th>
+                            <th>Année scolaire</th>
+                            <th>Actions</th>
                         </tr>
-
                     </thead>
-
 
                     <tbody>
 
@@ -169,93 +97,45 @@
 
                             <tr>
 
-                                {{-- ID --}}
-                                <th scope="row">
-
-                                    {{ $niveau->id }}
-
-                                </th>
-
-
-                                {{-- CODE --}}
                                 <td>
-
                                     <span class="badge bg-primary">
-
                                         {{ $niveau->code }}
-
                                     </span>
-
                                 </td>
 
+                                <td>{{ $niveau->libelle }}</td>
 
-                                {{-- LIBELLÉ --}}
                                 <td>
-
-                                    {{ $niveau->libelle }}
-
+                                    {{ number_format($niveau->montant ?? 0, 0, ',', ' ') }} FCFA
                                 </td>
 
-
-                                {{-- MONTANT --}}
                                 <td>
-
-                                    {{ number_format(
-                                        $niveau->montant ?? 0,
-                                        0,
-                                        ',',
-                                        ' '
-                                    ) }}
-
-                                    FCFA
-
-                                </td>
-
-
-                                {{-- ANNÉE SCOLAIRE --}}
-                                <td>
-
-                                    @if ($niveau->anneeScolaire)
-
+                                    @if($niveau->anneeScolaire)
                                         <span class="badge bg-success">
-
                                             {{ $niveau->anneeScolaire->scolaire_annee }}
-
                                         </span>
-
                                     @else
-
-                                        <span class="text-muted">
-
-                                            Aucune année
-
-                                        </span>
-
+                                        <span class="text-muted">Aucune année</span>
                                     @endif
-
                                 </td>
 
-
-                                {{-- ACTIONS --}}
-                                <td>
+                                <td class="d-flex gap-1">
 
                                     @canany(['update_niveaux'])
-
                                         <flux:button
                                             href="{{ route('niveaux.edit', $niveau->id) }}"
-                                           variant="primary" color="white" icon:trailing="pencil"></flux:button>
-
-
+                                            variant="primary"
+                                            color="white"
+                                            icon:trailing="pencil" />
                                     @endcanany
 
-
                                     @canany(['delete_niveaux'])
-
                                         <flux:button
+                                            wire:confirm="Etes vous vraiment supprimer ce niveau ?"
                                             wire:click="deleteNiveau({{ $niveau->id }})"
-                                             variant="danger" color="red" icon:trailing="trash"></flux:button>
-
-
+                                            variant="danger"
+                                            color="red"
+                                            icon:trailing="trash" />
                                     @endcanany
 
                                 </td>
@@ -265,22 +145,12 @@
                         @empty
 
                             <tr>
-
-                                <td
-                                    colspan="6"
-                                    class="text-center"
-                                >
-
+                                <td colspan="5" class="text-center">
                                     <div class="alert alert-info mb-0">
-
                                         <i class="bi bi-info-circle me-1"></i>
-
                                         Aucun niveau trouvé.
-
                                     </div>
-
                                 </td>
-
                             </tr>
 
                         @endforelse
@@ -289,16 +159,42 @@
 
                 </table>
 
+                {{-- =====================================================
+                    PAGINATION CUSTOM (condition >= 10)
+                ====================================================== --}}
 
-                {{-- =================================================
-                    PAGINATION
-                ================================================== --}}
+                @if($niveaux->count() >= 10)
 
-                <div class="mt-3">
+                    <nav aria-label="Page navigation example" class="mt-3">
+                        <ul class="pagination justify-content-end">
 
-                    {{ $niveaux->links() }}
+                            {{-- PREVIOUS --}}
+                            <li class="page-item {{ $niveaux->onFirstPage() ? 'disabled' : '' }}">
+                                <button class="page-link" wire:click="previousPage">
+                                    Previous
+                                </button>
+                            </li>
 
-                </div>
+                            {{-- NUMBERS --}}
+                            @foreach ($niveaux->getUrlRange(1, $niveaux->lastPage()) as $page => $url)
+                                <li class="page-item {{ $niveaux->currentPage() == $page ? 'active' : '' }}">
+                                    <button class="page-link" wire:click="gotoPage({{ $page }})">
+                                        {{ $page }}
+                                    </button>
+                                </li>
+                            @endforeach
+
+                            {{-- NEXT --}}
+                            <li class="page-item {{ $niveaux->hasMorePages() ? '' : 'disabled' }}">
+                                <button class="page-link" wire:click="nextPage">
+                                    Next
+                                </button>
+                            </li>
+
+                        </ul>
+                    </nav>
+
+                @endif
 
             </div>
 

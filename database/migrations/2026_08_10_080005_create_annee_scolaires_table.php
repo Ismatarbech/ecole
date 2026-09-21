@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('current_annee');
             $table->enum('status', ['active', 'inactive'])->default('inactive');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

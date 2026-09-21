@@ -20,14 +20,16 @@ return new class extends Migration
     $table->date('naissance');
     $table->string('sexe');
     $table->string('lieu');
-    $table->string('contact_eleve');
     $table->string('contact_parent');
+    $table->string('tuteur');
+    $table->string('contact_tuteur');
     $table->string('photo');
     $table->foreignId('classe_id')->constrained('classes')->cascadeOnDelete();
     $table->foreignId('annee_scolaire_id')->constrained('annee_scolaires')->cascadeOnDelete();
     $table->date('date_inscription');
       
     $table->timestamps();
+    $table->softDeletes();
 });
     }
 

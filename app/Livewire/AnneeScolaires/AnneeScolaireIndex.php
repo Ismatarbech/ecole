@@ -3,16 +3,19 @@
 namespace App\Livewire\AnneeScolaires;
 
 use Livewire\Component;
+use Livewire\WithPagination;
 use App\Models\AnneeScolaire;
 use App\Models\Niveau;
 
 class AnneeScolaireIndex extends Component
 {
+    use WithPagination;
     public string $search = '';
 
     public function updatedSearch(): void
     {
         $this->search = trim($this->search);
+        $this->resetPage();
     }
 
     public function toggleStatus($id)
@@ -84,7 +87,7 @@ class AnneeScolaireIndex extends Component
         $anneescolaires = AnneeScolaire::when($this->search !== '', function ($query) {
             $query->where('scolaire_annee', 'like', '%' . $this->search . '%')
                 ->orWhere('status', 'like', '%' . $this->search . '%');
-        })->orderBy('id', 'desc')->get();
+        })->orderBy('id', 'desc')->paginate(10);
 
         return view('anneescolaires.anneescolaire-index', compact('anneescolaires'));
     }

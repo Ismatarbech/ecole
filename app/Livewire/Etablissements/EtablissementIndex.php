@@ -3,15 +3,18 @@
 namespace App\Livewire\Etablissements;
 
 use Livewire\Component;
+use Livewire\WithPagination;
 use App\Models\Etablissement;
 
 class EtablissementIndex extends Component
 {
+    use WithPagination;
     public string $search = '';
 
     public function updatedSearch(): void
     {
         $this->search = trim($this->search);
+        $this->resetPage();
     }
 
     public function deleteEtablissement($etablissementId)
@@ -20,21 +23,18 @@ class EtablissementIndex extends Component
 
         if ($etablissement) {
 
-            // Supprimer l'établissement
-            $etablissement->delete();
+            $etablissement->delete(); // 👉 va en corbeille (soft delete)
 
-            // Message de succès
             session()->flash(
                 'message',
-                "L'établissement a été supprimé avec succès !"
+                "L'établissement a été envoyé dans la corbeille !"
             );
 
         } else {
 
-            // Message d'erreur
             session()->flash(
                 'error',
-                "L'établissement n'a pas été supprimé."
+                "Établissement introuvable."
             );
         }
     }
@@ -43,7 +43,7 @@ class EtablissementIndex extends Component
     {
         $etablissements = Etablissement::when($this->search !== '', function ($query) {
             $query->where('nom', 'like', '%' . $this->search . '%');
-        })->get();
+        })->paginate(10);
 
         return view(
             'etablissements.etablissement-index',

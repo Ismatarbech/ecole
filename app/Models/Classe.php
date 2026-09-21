@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 
 class Classe extends Model
 {
+    use SoftDeletes;
     protected $fillable = [
         'name',
         'niveau_id',
@@ -16,9 +19,14 @@ class Classe extends Model
         return $this->belongsTo(Niveau::class);
     }
 
-       public function eleves()
+    public function enseignants()
     {
-        return $this->belongsTo(Eleve::class);
+        return $this->belongsToMany(User::class, 'classe_user');
+    }
+
+    public function eleves()
+    {
+        return $this->hasMany(Eleve::class);
     }
 }
 

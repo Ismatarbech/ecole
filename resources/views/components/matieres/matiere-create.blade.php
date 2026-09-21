@@ -19,12 +19,6 @@
                   </div>
                 </div>
 
-                 <div class="row mb-3">
-                  <label for="inputEmail" class="col-sm-2 col-form-label">description </label>
-                  <div class="col-sm-10">
-                    <input type="text" class="form-control" wire:model="description">
-                  </div>
-                </div>
 
                  <div class="row mb-3">
                   <label for="inputEmail" class="col-sm-2 col-form-label">Coefficient </label>

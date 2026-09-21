@@ -14,6 +14,7 @@ use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Permission\traits\HasRoles;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 
 
@@ -34,6 +35,7 @@ use Spatie\Permission\traits\HasRoles;
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
+    use SoftDeletes;
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable, HasRoles;
 
@@ -63,8 +65,23 @@ class User extends Authenticatable implements PasskeyUser
     }
     public function matieres()
     {
-        return $this->hasMany(CreateMatiere::class);
+        return $this->belongsToMany(Matiere::class, 'classe_user', 'user_id', 'matiere_id')->distinct();
     }
 
+    public function classes()
+    {
+        return $this->belongsToMany(Classe::class, 'classe_user');
+    }
+
+    public function profile()
+    {
+        return $this->hasOne(UserProfile::class);
+    }
+
+    public function isProtected(): bool
+    {
+        return $this->name === 'super-admin';
+    }
+   
   
 }

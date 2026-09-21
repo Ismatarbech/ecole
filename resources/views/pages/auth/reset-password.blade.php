@@ -27,7 +27,7 @@
                             <div class="d-flex justify-content-center py-4">
                                 <a href="{{ route('login') }}" class="logo d-flex align-items-center w-auto">
                                     <img src="/assets/img/logo.png" alt="Logo school">
-                                    <span class="d-none d-lg-block">chool</span>
+                                    <span class="d-none d-lg-block">school</span>
                                 </a>
                             </div>
 

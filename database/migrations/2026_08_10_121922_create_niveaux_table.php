@@ -20,6 +20,7 @@ return new class extends Migration
             $table->unsignedBigInteger('annee_scolaire_id');
             $table->foreign('annee_scolaire_id')->references('id')->on('annee_scolaires');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

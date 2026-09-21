@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Livewire\Classes;
 
 use Livewire\Component;
@@ -8,43 +9,44 @@ use App\Models\Classe;
 
 class ClasseEdit extends Component
 {
+    public $classe;
     public $niveau_id;
     public $name;
     public $annee;
 
- public function mount($classe)
-{
-    $this->classe = Classe::findOrFail($classe);
+    public function mount($classe)
+    {
+        $this->classe = Classe::findOrFail($classe);
 
-    $this->name = $this->classe->name;
-    $this->niveau_id = $this->classe->niveau_id;
-    $this->annee = Niveau::all();
-}
+        $this->name = $this->classe->name;
+        $this->niveau_id = $this->classe->niveau_id;
 
+        // liste des niveaux
+        $this->annee = Niveau::all();
+    }
 
-    public function saveClasse(Classe $classe)
+    public function updateClasse()
     {
         $this->validate([
-            'niveau_id' => 'string|required|max:255',
+            'niveau_id' => 'required|exists:niveaux,id',
             'name' => 'required|string|max:255',
         ]);
 
-   
-        $classe->name = $this->name;
-        $classe->niveau_id = $this->niveau_id;
-    
-        $classe->updateClasse();
+        $this->classe->update([
+            'name' => $this->name,
+            'niveau_id' => $this->niveau_id,
+        ]);
 
-       return redirect()->route('classe.index')->with('success', 'Classe créée avec succès.');
+        return redirect()->route('classe.index')
+            ->with('success', 'Classe modifiée avec succès.');
     }
-    
-
 
     public function render()
     {
         $anneeScolaire = AnneeScolaire::where('status', 'active')->first();
 
         $anneecurrent = Niveau::where('annee_scolaire_id', $anneeScolaire->id)->get();
-        return view('classes.classe-create',compact('anneecurrent'));
+
+        return view('classes.classe-edit', compact('anneecurrent'));
     }
 }

@@ -1,270 +1,169 @@
 <div>
-    <div>
-        @if (session()->has('success') || session()->has('message'))
-            <div class="alert alert-success">{{ session('success') ?? session('message') }}</div>
-        @endif
-        @if (session()->has('error'))
-            <div class="alert alert-danger">{{ session('error') }}</div>
-        @endif
 
-        {{-- =====================================================
-             TITRE
-        ====================================================== --}}
+    {{-- ================= MESSAGES ================= --}}
+    @if ($successMessage)
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-1"></i>
+            {{ $successMessage }}
+            <button class="btn-close" wire:click="$set('successMessage', '')"></button>
+        </div>
+    @endif
 
-        <div class="pagetitle">
+    @if ($errorMessage)
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            {{ $errorMessage }}
+            <button class="btn-close" wire:click="$set('errorMessage', '')"></button>
+        </div>
+    @endif
 
-            <h1>Classe</h1>
 
-            <nav>
+    {{-- ================= TITRE ================= --}}
+    <div class="pagetitle">
+        <h1>Classe</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+                <li class="breadcrumb-item active">Classe</li>
+            </ol>
+        </nav>
+    </div>
 
-                <ol class="breadcrumb">
 
-                    <li class="breadcrumb-item">
-                        <a href="/dashboard">
-                            Accueil
-                        </a>
-                    </li>
+    {{-- ================= SEARCH + BUTTON ================= --}}
+    <div class="d-flex justify-content-end mb-3">
 
-                    <li class="breadcrumb-item active">
-                        Classe
-                    </li>
+        <div class="input-group me-3" style="max-width: 360px;">
+            <span class="input-group-text bg-primary text-white">
+                <i class="bi bi-search"></i>
+            </span>
 
-                </ol>
-
-            </nav>
-
+            <input type="search"
+                   class="form-control"
+                   wire:model.live="search"
+                   placeholder="Rechercher une classe...">
         </div>
 
+        @canany('create_classes')
+            <flux:button href="{{ route('classe.create') }}" icon="user-plus">
+                Nouvelle classe
+            </flux:button>
+        @endcanany
 
-        {{-- =====================================================
-             MESSAGE SUCCÈS
-        ====================================================== --}}
-
-        @if($successMessage)
-
-            <div
-                class="alert alert-success alert-dismissible fade show"
-                role="alert"
-            >
-
-                <i class="bi bi-check-circle me-1"></i>
-
-                {{ $successMessage }}
-
-                <button
-                    type="button"
-                    class="btn-close"
-                    wire:click="$set('successMessage', '')"
-                    aria-label="Close"
-                >
-                </button>
-
-            </div>
-
-        @endif
+    </div>
 
 
-        {{-- =====================================================
-             MESSAGE ERREUR
-        ====================================================== --}}
+    {{-- ================= TABLE ================= --}}
+    <div class="card">
+        <div class="card-body">
 
-        @if($errorMessage)
+            <h5 class="card-title">Liste des classes</h5>
 
-            <div
-                class="alert alert-danger alert-dismissible fade show"
-                role="alert"
-            >
+            <table class="table table-borderless">
 
-                <i class="bi bi-exclamation-triangle me-1"></i>
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Libellé</th>
+                        <th>Niveau</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
 
-                {{ $errorMessage }}
+                <tbody>
 
-                <button
-                    type="button"
-                    class="btn-close"
-                    wire:click="$set('errorMessage', '')"
-                    aria-label="Close"
-                >
-                </button>
+                    @forelse($classe as $classes)
 
-            </div>
+                        <tr wire:key="classe-{{ $classes->id }}">
 
-        @endif
+                           
+                            <td>{{ $classes->name }}</td>
+                            <td>{{ $classes->niveau->libelle ?? '-' }}</td>
+
+                            <td>
+                                <span class="badge bg-success">
+                                    {{ $classes->niveau->code ?? '-' }}
+                                </span>
+                            </td>
+
+                            <td class="d-flex gap-1">
+
+                                @canany('update_classes')
+                                    <flux:button
+                                        href="{{ route('classe.edit', $classes->id) }}"
+                                        variant="primary"
+                                        color="white"
+                                        icon:trailing="pencil" />
+                                @endcanany
+
+                                @canany('delete_classes')
+                                    <flux:button
+                                        wire:click="deleteClasse({{ $classes->id }})"
+                                        wire:confirm="Supprimer cette classe ?"
+                                        variant="danger"
+                                        color="red"
+                                        icon:trailing="trash" />
+                                @endcanany
+
+                            </td>
+
+                        </tr>
+
+                    @empty
+
+                        <tr>
+                            <td colspan="5" class="text-center">
+                                <div class="alert alert-info mb-0">
+                                    Aucune classe trouvée
+                                </div>
+                            </td>
+                        </tr>
+
+                    @endforelse
+
+                </tbody>
+
+            </table>
 
 
-        {{-- =====================================================
-             BOUTON NOUVELLE CLASSE
-        ====================================================== --}}
+            {{-- ================= PAGINATION BOOTSTRAP STYLE ================= --}}
+            @if ($classe->hasPages())
+                <nav aria-label="Page navigation example" class="mt-3">
+                    <ul class="pagination justify-content-end">
 
-        <div class="d-flex justify-content-end mb-3">
-            <div class="input-group me-3 index-search" style="max-width: 360px;">
-                <span class="input-group-text bg-primary text-white"><i class="bi bi-search"></i></span>
-                <input type="search" class="form-control border-primary" wire:model.live="search" placeholder="Rechercher une classe...">
-            </div>
+                        {{-- PREVIOUS --}}
+                        <li class="page-item {{ $classe->onFirstPage() ? 'disabled' : '' }}">
+                            <button class="page-link"
+                                    wire:click="previousPage"
+                                    @disabled($classe->onFirstPage())>
+                                précédente
+                            </button>
+                        </li>
 
-            @canany('create_classes')
+                        {{-- NUMBERS --}}
+                        @foreach ($classe->getUrlRange(1, $classe->lastPage()) as $page => $url)
+                            <li class="page-item {{ $classe->currentPage() == $page ? 'active' : '' }}">
+                                <button class="page-link"
+                                        wire:click="gotoPage({{ $page }})">
+                                    {{ $page }}
+                                </button>
+                            </li>
+                        @endforeach
 
-                <flux:button
-                    href="{{ route('classe.create') }}"
-                    icon="user-plus"
-                >
-                    Nouvelle classe
-                </flux:button>
+                        {{-- NEXT --}}
+                        <li class="page-item {{ $classe->hasMorePages() ? '' : 'disabled' }}">
+                            <button class="page-link"
+                                    wire:click="nextPage"
+                                    @disabled(!$classe->hasMorePages())>
+                                Suivant
+                            </button>
+                        </li>
 
-            @endcanany
+                    </ul>
+                </nav>
+            @endif
 
         </div>
-
-        <br>
-
-
-        {{-- =====================================================
-             LISTE DES CLASSES
-        ====================================================== --}}
-
-        <div class="col-12">
-
-            <div class="card recent-sales overflow-auto">
-
-                <div class="card-body">
-
-                    <h5 class="card-title">
-                        Liste de salle de classe
-                        <span>| Aujourd'hui</span>
-                    </h5>
-
-
-                    <table class="table table-borderless datatable">
-
-                        <thead>
-
-                            <tr>
-
-                                <th scope="col">
-                                    id
-                                </th>
-
-                                <th scope="col">
-                                    Nom
-                                </th>
-
-                                <th scope="col">
-                                    Niveau
-                                </th>
-
-                                <th scope="col">
-                                    Montant
-                                </th>
-
-                                <th scope="col">
-                                    Actions
-                                </th>
-
-                                <th scope="col">
-                                    libellé
-                                </th>
-
-                            </tr>
-
-                        </thead>
-
-
-                        <tbody>
-
-                            @forelse($classe as $classes)
-
-                                <tr>
-
-                                    <th scope="row">
-                                        <a href="#">
-                                            {{ $classes->id }}
-                                        </a>
-                                    </th>
-
-                                    <td>
-                                        {{ $classes->name }}
-                                    </td>
-
-                                    <td>
-                                        {{ $classes->niveau->libelle }}
-                                    </td>
-
-                                    <td>
-                                        {{ $classes->niveau->montant }}
-                                    </td>
-
-                                    <td>
-
-                                        {{-- MODIFIER --}}
-
-                                        @canany('update_classes')
-
-                                            <flux:button
-                                                href="{{ route('classe.edit', $classes->id) }}"
-                                                variant="primary" color="white" icon:trailing="pencil"></flux:button>
-
-
-                                        @endcanany
-
-
-                                        {{-- SUPPRIMER --}}
-
-                                        @canany('delete_classes')
-
-                                            <flux:button
-                                                wire:click="deleteClasse({{ $classes->id }})"
-                                                wire:confirm="Êtes-vous sûr de vouloir supprimer cette classe ?"
-                                                variant="danger" color="red" icon:trailing="trash"></flux:button>
-
-
-                                        @endcanany
-
-                                    </td>
-
-                                    <td>
-
-                                        <span class="badge bg-success">
-                                            {{ $classes->niveau->code }}
-                                        </span>
-
-                                    </td>
-
-                                </tr>
-
-                            @empty
-
-                                <tr>
-
-                                    <td colspan="6" class="text-center">
-                                        <div class="alert alert-info mb-0">
-                                            <i class="bi bi-info-circle me-1"></i>
-                                            Aucune classe trouvée.
-                                        </div>
-                                    </td>
-
-                                </tr>
-
-                            @endforelse
-
-                        </tbody>
-
-                    </table>
-
-
-                    {{-- PAGINATION --}}
-
-                    <div class="mt-3">
-
-                        {{ $classe->links() }}
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
     </div>
 
 </div>

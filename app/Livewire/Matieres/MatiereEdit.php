@@ -4,33 +4,67 @@ namespace App\Livewire\Matieres;
 
 use Livewire\Component;
 use App\Models\Matiere;
+use App\Models\Niveau;
 
 class MatiereEdit extends Component
 {
-    public $nom;
-    public $coefficient;
-    public $description;
-    public $niveau_id;
+    public Matiere $matiere;
 
+    public $nom = '';
+    public $coefficient = '';
+    public $niveau_id = '';
+
+    public $niveaux = [];
+
+    /**
+     * Récupérer la matière à modifier
+     */
+    public function mount(Matiere $matiere)
+    {
+        $this->matiere = $matiere;
+
+        // Récupérer les anciennes valeurs
+        $this->nom = $matiere->nom;
+        $this->coefficient = $matiere->coefficient;
+        $this->niveau_id = $matiere->niveau_id;
+
+        // Récupérer tous les niveaux
+        $this->niveaux = Niveau::orderBy('code')->get();
+    }
+
+    /**
+     * Modifier la matière
+     */
     public function save()
     {
         $this->validate([
             'nom' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'coefficient' =>'required|integer|max:10',
-            'niveau_id' =>'required|integer|max:10'
+
+            'coefficient' => 'required|integer|min:1|max:10',
+
+            'niveau_id' => 'required|exists:niveaux,id',
         ]);
 
-        Matiere::create([
+        $this->matiere->update([
             'nom' => $this->nom,
-            'description' => $this->description,
-            'coefficient' =>$this->coefficient,
-            'niveau_is' =>$this->niveau_is
+            'coefficient' => $this->coefficient,
+            'niveau_id' => $this->niveau_id,
         ]);
 
-       return redirect('matieres')->session()->flash('success', 'Matière ajoutée avec succès');
+        session()->flash(
+            'success',
+            'Matière modifiée avec succès.'
+        );
 
-        $this->reset(['nom', 'description','coefficient','niveau_is']);
+        return redirect()->route('matiere.index');
+    }
+
+    /**
+     * Annuler
+     */
+    public function cancel()
+    {
+        return redirect()->route('matiere.index');
     }
 
     public function render()

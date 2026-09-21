@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PasswordConfirmController;
+
 
 use App\Livewire\Users\UserIndex;
 use App\Livewire\Users\UserCreate;
@@ -43,9 +45,6 @@ use App\Livewire\Niveaux\NiveauxIndex;
 use App\Livewire\Niveaux\NiveauxCreate;
 use App\Livewire\Niveaux\NiveauxEdit;
 
-use App\Livewire\Paiements\PaiementIndex;
-use App\Livewire\Paiements\PaiementCreate;
-use App\Livewire\Paiements\PaiementEdit;
 
 use App\Livewire\Contacts\ContactIndex;
 use App\Livewire\Contacts\ContactCreate;
@@ -55,20 +54,34 @@ use App\Livewire\AnneeScolaires\AnneeScolaireIndex;
 use App\Livewire\AnneeScolaires\AnneeScolaireCreate;
 use App\Livewire\AnneeScolaires\AnneeScolaireEdit;
 
+use App\Livewire\Periodes\PeriodeIndex;
+use App\Livewire\Periodes\PeriodeCreate;
+use App\Livewire\Periodes\PeriodeEdit;
+
 use App\Livewire\Notes\NoteIndex;
 use App\Livewire\Notes\NoteCreate;
 use App\Livewire\Notes\NoteEdit;
 
+use App\Livewire\Corbeilles\CorbeilleIndex;
+
+use App\Http\Controllers\ProfileController;
+
 use App\Livewire\Matieres\MatiereIndex;
 use App\Livewire\Matieres\MatiereCreate;
 use App\Livewire\Matieres\MatiereEdit;
+
+use App\Livewire\Enseignants\AttributionClasses;
+use App\Livewire\Enseignants\AttributionIndex;
+
 use App\Http\Controllers\EleveDocumentController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DonneeController;
 
 
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/', [DashboardController::class, 'index'])->name('/');
+    Route::get('/donnees', [DonneeController::class, 'index'])->name('donnees.index');
 });
 
 
@@ -93,7 +106,7 @@ Route::get('notes/{note}/edit', NoteEdit::class)->middleware(['auth','can:update
 
 Route::get('matieres', MatiereIndex::class)->middleware(['auth','can:view_matieres','can:view_any_matieres'])->name('matiere.index');
 Route::get('matieres/create', MatiereCreate::class)->middleware(['auth'])->name('matiere.create');
-Route::get('matieres/{matiere}/edit', MatiereEdit::class)->middleware(['auth','can:update_matieres'])->name('matiere.update');
+Route::get('matieres/{matiere}/edit', MatiereEdit::class)->middleware(['auth','can:update_matieres'])->name('matiere.edit');
 
 Route::get('roles', RoleIndex::class)->middleware(['auth','can:view_roles','can:view_any_roles'])->name('roles.index');
 Route::get('roles/create', RoleCreate::class)->middleware(['auth'])->name('roles.create');
@@ -131,6 +144,10 @@ Route::get('anneescolaire', AnneeScolaireIndex::class)->middleware(['auth','can:
 Route::get('anneescolaire/create', AnneeScolaireCreate::class)->middleware(['auth'])->name('anneescolaire.create');
 Route::get('anneescolaire/{anneescolaire}/edit', AnneeScolaireEdit::class)->middleware(['auth','can:update_annee_scolaire'])->name('anneescolaire.edit');
 
+Route::get('periodes', PeriodeIndex::class)->middleware(['auth'])->name('periodes.index');
+Route::get('periodes/create', PeriodeCreate::class)->middleware(['auth'])->name('periodes.create');
+Route::get('periodes/{periode}/edit', PeriodeEdit::class)->middleware(['auth'])->name('periodes.edit');
+
 Route::get('classes', ClasseIndex::class)->middleware(['auth','can:view_classes','can:view_any_classes'])->name('classe.index');
 Route::get('classes/create', ClasseCreate::class)->middleware(['auth'])->name('classe.create');
 Route::get('classes/{classe}/edit', ClasseEdit::class)->middleware(['auth','can:update_classes'])->name('classe.edit');
@@ -140,13 +157,107 @@ Route::get('contacts/create', ContactCreate::class)->middleware(['auth'])->name(
 Route::get('contacts/{contact}/edit', ContactEdit::class)->middleware(['auth','can:update_contact'])->name('contact.edit');
 
 
-Route::get('paiements',paiementIndex::class)->middleware(['auth','can:view_paiements','can:view_any_paiements'])->name('paiement.index');
-Route::get('paiements/create',PaiementCreate::class)->middleware(['auth'])->name('paiement.create');
-Route::get('paiements/{paiement}/edit',PaiementEdit::class)->middleware(['auth','can:update_paiements'])->name('inscription.edit');
 
+Route::get('corbeilles', CorbeilleIndex::class)->middleware('auth')->name('corbeille.index');
+
+
+Route::get('enseignants', AttributionIndex::class)->middleware(['auth'])->name('enseignants.index');
+Route::get('enseignants/attributions', AttributionClasses::class)->middleware(['auth'])->name('enseignants.attributions');
+
+
+Route::middleware('auth')->group(function () {
+
+    Route::get('/settings/profile', [ProfileController::class, 'index'])
+        ->name('settings.profile');
+
+    Route::put('/settings/profile', [ProfileController::class, 'update'])
+        ->name('settings.profile.update');
+
+});
+
+
+
+Route::middleware('auth')->group(function () {
+
+    Route::post('/password/check', [PasswordConfirmController::class, 'verify'])
+        ->name('password.check');
+
+    Route::get('/password/change', [PasswordConfirmController::class, 'change'])
+        ->name('password.change');
+
+});
+
+Route::middleware('auth')->group(function () {
+
+    Route::post('/password/check', [PasswordConfirmController::class, 'verify'])
+        ->name('password.check');
+
+    Route::get('/settings/security', [PasswordConfirmController::class, 'security'])
+        ->name('settings.security');
+
+});
+
+
+
+Route::middleware('auth')->group(function () {
+
+    Route::get('/settings/security', function () {
+        return view('settings.security');
+    })->name('settings.security');
+
+    Route::post('/settings/check-password', [PasswordConfirmController::class, 'check'])
+        ->name('password.check');
+
+});
 
 Route::middleware(['auth', 'role:super_admin'])->group(function () {
     Route::get('/admin/settings', [SettingController::class, 'index']);
 });
 
+
+
+Route::middleware('auth')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | CONFIRMER MOT DE PASSE
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/settings/confirm-password',
+        [PasswordConfirmController::class, 'index']
+    )->name('password.check');
+
+
+    Route::post(
+        '/settings/confirm-password',
+        [PasswordConfirmController::class, 'verify']
+    )->name('password.verify');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SECURITY
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/settings/security',
+        [PasswordConfirmController::class, 'security']
+    )->name('settings.security');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | MODIFIER MOT DE PASSE
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/settings/security',
+        [PasswordConfirmController::class, 'updatePassword']
+    )->name('settings.password.update');
+
+});
 require __DIR__.'/settings.php';

@@ -1,72 +1,93 @@
-<div class="w-2/2">
-    @if (session()->has('success') || session()->has('message'))
-      <div class="alert alert-success">{{ session('success') ?? session('message') }}</div>
+<div class="w-100">
+
+    {{-- MESSAGES --}}
+    @if (session()->has('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
     @endif
+
     @if (session()->has('error'))
-      <div class="alert alert-danger">{{ session('error') }}</div>
+        <div class="alert alert-danger">
+            {{ session('error') }}
+        </div>
     @endif
-        <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Ajouter de permission</h5>
 
-              <!-- General Form Elements -->
-              <form wire:submit="createPermission">
+    <div class="card shadow-sm">
+        <div class="card-body">
 
+            <h5 class="card-title mb-4">
+                Ajouter une permission (Super Admin uniquement)
+            </h5>
+
+            <form wire:submit.prevent="createPermission">
+
+                {{-- NOM PERMISSION --}}
                 <div class="row mb-3">
-                  <label for="inputText" class="col-sm-2 col-form-label">Nom de permission</label>
-                  <div class="col-sm-10">
-                    <input type="text" class="form-control" wire:model='name' wire:model="name">
-                  </div>
-                </div>
-                 @error('name')
-                    <span class="text-danger">{{ $message }}</span>
-                @enderror
+                    <label class="col-sm-3 col-form-label">
+                        Nom de permission
+                    </label>
 
-                  <div class="row mb-3">
+                    <div class="col-sm-9">
+                        <input type="text"
+                               class="form-control"
+                               wire:model="name"
+                               placeholder="Ex: create_users">
 
-                  <legend class="col-form-label col-sm-2 pt-0">
-                      Selectionner le role
-                  </legend>
-
-                  <div class="col-sm-10">
-
-                      {{-- Rôles --}}
-                      @foreach ($allRoles as $role)
-
-                          <div class="form-check mb-2">
-
-                              <input
-                                  class="form-check-input"
-                                  type="checkbox"
-                                  wire:model="selectedRoles"
-                                  value="{{ $role }}"
-                                  id="role_{{ $loop->index }}"
-                              >
-
-                              <label
-                                  class="form-check-label"
-                                  for="role_{{ $loop->index }}"
-                              >
-                                  {{ $role }}
-                              </label>
-
-                          </div>
-
-                      @endforeach
-
-                  </div>
-
-              </div>
-
-
-                <div class="row mb-3">
-                  <label class="col-sm-2 col-form-label"></label>
-                  <div class="col-sm-10">
-                    <button type="submit" class="btn btn-primary">Enregistrer</button>
-                  </div>
+                        @error('name')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
                 </div>
 
-              </form><!-- End General Form Elements -->
+                {{-- ROLES --}}
+                <div class="row mb-3">
 
-            </div>
-          </div>
+                    <label class="col-sm-3 col-form-label">
+                        Rôle autorisé
+                    </label>
+
+                    <div class="col-sm-9">
+
+                        @foreach ($allRoles as $role)
+
+                            <div class="form-check mb-2">
+
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       wire:model="selectedRoles"
+                                       value="{{ $role }}"
+                                       id="role_{{ $loop->index }}"
+                                       @if($role === 'super-admin') checked disabled @endif
+                                >
+
+                                <label class="form-check-label"
+                                       for="role_{{ $loop->index }}">
+                                    {{ $role }}
+                                </label>
+
+                            </div>
+
+                        @endforeach
+
+                        @error('selectedRoles')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+
+                    </div>
+                </div>
+
+                {{-- BUTTON --}}
+                <div class="row mt-4">
+                    <div class="col-sm-9 offset-sm-3">
+                        <button class="btn btn-primary">
+                            Enregistrer
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>

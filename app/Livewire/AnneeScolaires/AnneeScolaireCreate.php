@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace App\Livewire\AnneeScolaires;
 
@@ -6,25 +6,61 @@ use Livewire\Component;
 use App\Models\AnneeScolaire;
 use Carbon\Carbon;
 
-
 class AnneeScolaireCreate extends Component
 {
-    public $annee;
+    public string $annee = '';
 
-    public function save(AnneeScolaire $AnneeScolaire)
+    /**
+     * 🔥 normalisation propre
+     */
+    private function normalize(string $value): string
     {
-        $this->validate([
-            'annee' => 'required|string|unique:annee_scolaires,scolaire_annee|max:255',
+        $value = trim($value);
+        $value = str_replace('/', '-', $value);
+        $value = preg_replace('/\s+/', '', $value);
+        return $value;
+    }
+
+    /**
+     * ❌ NE PAS VALIDER EN LIVE (important)
+     * seulement au submit
+     */
+
+  public function save()
+{
+    $anneeClean = $this->normalize($this->annee);
+
+    if (empty($anneeClean)) {
+        session()->flash('error', "Veuillez saisir une année scolaire.");
+        return;
+    }
+
+    $exists = AnneeScolaire::all()->contains(function ($item) use ($anneeClean) {
+        return $this->normalize($item->scolaire_annee) === $anneeClean;
+    });
+
+    if ($exists) {
+        session()->flash('error', "Cette année scolaire existe déjà.");
+        return;
+    }
+
+    try {
+        AnneeScolaire::create([
+            'scolaire_annee' => $anneeClean,
+            'current_annee' => Carbon::now()->format('Y'),
+            'status' => 'inactive',
         ]);
 
-        $current_annee = Carbon::now()->format('Y');
-        $AnneeScolaire->scolaire_annee = $this->annee;
-        $AnneeScolaire->current_annee = $current_annee;
+        // ✅ message flash pour index
+        session()->flash('success', "Année scolaire créée avec succès.");
 
-        $AnneeScolaire->save();
+        // 🔥 REDIRECTION VERS INDEX
+        return redirect()->route('anneescolaire.index');
 
-        return redirect()->route('anneescolaire.index')->with('success', 'Année scolaire créée avec succès.');
+    } catch (\Throwable $e) {
+        session()->flash('error', "Erreur lors de la création.");
     }
+}
 
     public function render()
     {

@@ -11,7 +11,6 @@ class MatiereCreate extends Component
 {
     public $nom;
     public $coefficient;
-    public $description;
     public $niveau_id;
 
     public function save()
@@ -25,7 +24,7 @@ class MatiereCreate extends Component
                     return $query->where('niveau_id', $this->niveau_id);
                 }),
             ],
-            'description' => 'nullable|string',
+       
             'coefficient' =>'required|integer|max:10',
             'niveau_id' => 'required|exists:niveaux,id',
         ], [
@@ -35,7 +34,6 @@ class MatiereCreate extends Component
         try {
             Matiere::create([
                 'nom' => $this->nom,
-                'description' => $this->description,
                 'coefficient' => $this->coefficient,
                 'niveau_id' => $this->niveau_id,
             ]);

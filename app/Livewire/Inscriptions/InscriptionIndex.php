@@ -3,16 +3,20 @@
 namespace App\Livewire\Inscriptions;
 
 use Livewire\Component;
+use Livewire\WithPagination;
 use App\Models\Eleve;
 use App\livewire\Inscriptions;
 
 use App\Models\Classe;
 use App\Models\AnneeScolaire;
 use App\Models\Note;
+use App\Exports\ElevesExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 
 class InscriptionIndex extends Component
 {
+    use WithPagination;
     public string $errorMessage = '';
     public string $search = '';
     public string $selectedClasseId = '';
@@ -20,6 +24,27 @@ class InscriptionIndex extends Component
     public function updatedSearch(): void
     {
         $this->search = trim($this->search);
+        $this->resetPage();
+    }
+
+    public function updatedSelectedClasseId(): void
+    {
+        $this->resetPage();
+    }
+
+    public function exporterClasse()
+    {
+        if ($this->selectedClasseId === '') {
+            $this->errorMessage = 'Sélectionnez une classe avant de télécharger la liste.';
+            return null;
+        }
+
+        $classe = Classe::findOrFail($this->selectedClasseId);
+
+        return Excel::download(
+            new ElevesExport($this->selectedClasseId),
+            'eleves-' . str($classe->name)->slug() . '.xlsx'
+        );
     }
 
     public function deleteEleve($eleveId)
@@ -34,10 +59,10 @@ class InscriptionIndex extends Component
 
         if (!$anneScolaire) {
             $this->errorMessage = "Aucune année scolaire active n'a été trouvée.";
-            $elevesParClasse = collect();
+            $eleves = Eleve::whereIn('id', [])->paginate(10);
             $classes = collect();
 
-            return view('inscriptions.inscription-index', compact('elevesParClasse', 'classes'));
+            return view('inscriptions.inscription-index', compact('eleves', 'classes'));
         }
 
         $this->errorMessage = '';
@@ -60,12 +85,10 @@ class InscriptionIndex extends Component
                         });
                 });
             })
-            ->get();
-
-        $elevesParClasse = $eleves
-            ->sortBy(fn ($eleve) => $eleve->classe?->name ?? 'Classe non affectée')
-            ->groupBy(fn ($eleve) => $eleve->classe_id ?? 'sans-classe');
+            ->orderBy('nom')
+            ->orderBy('prenom')
+            ->paginate(10);
         
-        return view('inscriptions.inscription-index', compact('elevesParClasse', 'classes'));
+        return view('inscriptions.inscription-index', compact('eleves', 'classes'));
     }
 }

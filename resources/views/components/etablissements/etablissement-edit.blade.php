@@ -13,7 +13,7 @@
             <ol class="breadcrumb">
 
                 <li class="breadcrumb-item">
-                    <a href="{{ route('dashboard') }}">
+                    <a href="{{ route('/') }}">
                         Accueil
                     </a>
                 </li>

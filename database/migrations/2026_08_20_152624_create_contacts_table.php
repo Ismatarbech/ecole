@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('sujet');
             $table->string('reclammation');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

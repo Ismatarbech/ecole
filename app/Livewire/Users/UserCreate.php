@@ -17,67 +17,75 @@ class UserCreate extends Component
 
     public function mount()
     {
-        $this->allRoles = Role::pluck('name')->toArray();
+        // 🔥 on exclut les rôles sensibles
+        $this->allRoles = Role::whereNotIn('name', [
+            'super-admin',
+            'admin'
+        ])->pluck('name')->toArray();
     }
 
     protected $rules = [
         'name' => 'required|string|max:255',
-        'email' => 'required|string|email|max:255|unique:users,email',
-        'password' => 'required|string|min:8',
+        'email' => 'required|email|unique:users,email',
+        'password' => 'required|min:8',
         'selectedRoles' => 'nullable|array',
     ];
 
     protected $messages = [
         'name.required' => 'Le nom est obligatoire.',
-        'name.string' => 'Le nom doit être une chaîne de caractères.',
-        'name.max' => 'Le nom ne doit pas dépasser 255 caractères.',
-
-        'email.required' => "L’adresse email est obligatoire.",
-        'email.email' => 'Veuillez saisir une adresse email valide.',
+        'email.required' => 'L’email est obligatoire.',
+        'email.email' => 'Email invalide.',
         'email.unique' => 'Cet email existe déjà.',
-
         'password.required' => 'Le mot de passe est obligatoire.',
-        'password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
-
-        'selectedRoles.array' => 'La sélection des rôles est invalide.',
+        'password.min' => '8 caractères minimum.',
     ];
 
-    public function CreateUser()
-    {
-        $this->validate();
+  public function CreateUser()
+{
+    $this->validate();
 
-        try {
+    $authUser = auth()->user();
 
-            $newuser = User::create([
-                'name' => $this->name,
-                'email' => $this->email,
-                'password' => bcrypt($this->password),
-            ]);
-
-            if (!empty($this->selectedRoles)) {
-                $newuser->assignRole($this->selectedRoles);
-            }
-
-            // Message de succès
-            session()->flash(
-                'success',
-                'L’utilisateur a été créé avec succès.'
-            );
-
-            // Redirection vers la liste des utilisateurs
-            return redirect()->route('users.index');
-
-        } catch (\Exception $e) {
-
-            // Message d'erreur
-            session()->flash(
-                'error',
-                'Une erreur est survenue lors de la création de l’utilisateur.'
-            );
-
-            return;
-        }
+    if (!$authUser || !$authUser->hasRole(['super-admin','proviseur'])) {
+        session()->flash('error', 'Accès refusé.');
+        return;
     }
+
+    // 🔥 rôles de l'utilisateur connecté
+    $creatorRoles = $authUser->getRoleNames()->toArray();
+
+    // ❌ empêche d’attribuer son propre rôle
+    if (collect($this->selectedRoles)->intersect($creatorRoles)->count()) {
+        session()->flash('error', 'Vous ne pouvez pas attribuer votre propre rôle.');
+        return;
+    }
+
+    // 🔥 anti admin injection
+    if (collect($this->selectedRoles)->intersect(['admin', 'super-admin'])->count()) {
+        session()->flash('error', 'Rôle non autorisé.');
+        return;
+    }
+
+    try {
+
+        $user = User::create([
+            'name' => $this->name,
+            'email' => $this->email,
+            'password' => bcrypt($this->password),
+        ]);
+
+        if (!empty($this->selectedRoles)) {
+            $user->assignRole($this->selectedRoles);
+        }
+
+        session()->flash('success', 'Utilisateur créé avec succès.');
+        return redirect()->route('users.index');
+
+    } catch (\Exception $e) {
+        session()->flash('error', 'Erreur lors de la création.');
+        return;
+    }
+}
 
     public function render()
     {

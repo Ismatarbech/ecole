@@ -3,29 +3,42 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Eleve;
-use App\Models\User;
-use App\Models\Matiere;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Note extends Model
 {
+    use SoftDeletes;
+    use HasFactory;
+
     protected $fillable = [
         'eleve_id',
         'matiere_id',
         'enseignant_id',
+        'periode_id',
         'devoir',
-        'composition'
+        'composition',
+        'moyenne',
+        'appreciation',
+        'modification_autorisee',
     ];
 
-    // 🔗 relations
+    protected $casts = [
+        'devoir' => 'decimal:2',
+        'composition' => 'decimal:2',
+        'moyenne' => 'decimal:2',
+        'modification_autorisee' => 'boolean',
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Relations
+    |--------------------------------------------------------------------------
+    */
+
     public function eleve()
     {
-        return $this->belongsTo(Eleve::class, 'eleve_id');
-    }
-
-    public function enseignant()
-    {
-        return $this->belongsTo(User::class, 'enseignant_id');
+        return $this->belongsTo(Eleve::class);
     }
 
     public function matiere()
@@ -33,4 +46,13 @@ class Note extends Model
         return $this->belongsTo(Matiere::class);
     }
 
+    public function enseignant()
+    {
+        return $this->belongsTo(User::class, 'enseignant_id');
+    }
+
+    public function periode()
+    {
+        return $this->belongsTo(Periode::class);
+    }
 }

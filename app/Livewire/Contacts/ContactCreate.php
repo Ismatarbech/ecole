@@ -23,24 +23,23 @@ class ContactCreate extends Component
         'reclammation'=> 'required|string|max:255'
     ];
 
-        public function saveContact()
-        {
-            $this->validate();
+    public function saveContact()
+    {
+    $this->validate();
 
-            Contact::create([
-                'nom'=>$this->nom,
-                'matricule'=>$this->matricule,
-                'niveau'=>$this->niveau,
-                'sujet'=>$this->sujet,
-                'reclammation'=>$this->reclammation,
-            ]);
+    Contact::create([
+        'nom' => $this->nom,
+        'matricule' => $this->matricule,
+        'niveau' => $this->niveau,
+        'sujet' => $this->sujet,
+        'reclammation' => $this->reclammation,
+    ]);
 
-        return redirect('contact.create');
+    session()->flash('success', 'Réclamation envoyée avec succès.');
 
-        $this->reset(['nom','matricule','niveau','sujet','reclammation']);
+    return redirect()->route('/contacts');
     }
-
-
+ 
     public function render()
     {
          return view('contacts.contact-create');

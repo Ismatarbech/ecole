@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Eleve extends Model
 {
+    use SoftDeletes;
     protected $casts = [
         'naissance' => 'date',
         'date_inscription' => 'date',
@@ -18,8 +20,9 @@ class Eleve extends Model
         'naissance',
         'sexe',
         'lieu',
-        'contact_eleve',
         'contact_parent',
+        'tuteur',
+        'contact_tuteur',
         'photo',
         'classe_id',
         'date_inscription',
@@ -44,6 +47,11 @@ class Eleve extends Model
      public function notes()
     {
         return $this->hasMany(Note::class, 'eleve_id');
+    }
+
+    public function etablissement()
+    {
+        return $this->hasMany(Etablissement::class, 'eleve_id');
     }
 
     

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->unsignedBigInteger('niveau_id');
             $table->foreign('niveau_id')->references('id')->on('niveaux');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

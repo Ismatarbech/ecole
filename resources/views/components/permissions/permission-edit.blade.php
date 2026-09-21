@@ -1,47 +1,63 @@
-<div class="w-2/2">
-    @if (session()->has('success') || session()->has('message'))
-      <div class="alert alert-success">{{ session('success') ?? session('message') }}</div>
+<div class="w-100">
+
+    {{-- SUCCESS --}}
+    @if (session()->has('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
     @endif
+
+    {{-- ERROR --}}
     @if (session()->has('error'))
-      <div class="alert alert-danger">{{ session('error') }}</div>
+        <div class="alert alert-danger">
+            {{ session('error') }}
+        </div>
     @endif
-        <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Modifier de permission</h5>
 
-              <!-- General Form Elements -->
-              <form wire:submit="updatePermission">
-                <div class="row mb-3">
-                  <label for="inputText" class="col-sm-2 col-form-label">Nom de permission</label>
-                  <div class="col-sm-10">
-                    <input type="text" class="form-control" wire:model='name' wire:model="name">
-                  </div>
-                </div>
-                                
-                <div class="row mb-3">
+    <div class="card shadow-sm">
 
-                    <legend class="col-form-label col-sm-2 pt-0">
-                        Selectionner le role
-                    </legend>
+        <div class="card-body">
+
+            <h5 class="card-title">
+                Modifier permission
+            </h5>
+
+            <form wire:submit.prevent="updatePermission">
+
+                {{-- NOM --}}
+                <div class="row mb-3">
+                    <label class="col-sm-2 col-form-label">
+                        Nom permission
+                    </label>
 
                     <div class="col-sm-10">
-                        {{-- Rôles --}}
+                        <input type="text"
+                               class="form-control"
+                               wire:model="name">
+                    </div>
+                </div>
+
+                {{-- ROLES --}}
+                <div class="row mb-3">
+
+                    <label class="col-sm-2 col-form-label">
+                        Rôles
+                    </label>
+
+                    <div class="col-sm-10">
+
                         @foreach ($allRoles as $role)
 
-                            <div class="form-check mb-2">
+                            <div class="form-check">
 
-                                <input
-                                    class="form-check-input"
-                                    type="checkbox"
-                                    wire:model="selectedRoles"
-                                    value="{{ $role }}"
-                                    id="role_{{ $loop->index }}"
-                                >
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       wire:model="selectedRoles"
+                                       value="{{ $role }}"
+                                       id="role_{{ $loop->index }}">
 
-                                <label
-                                    class="form-check-label"
-                                    for="role_{{ $loop->index }}"
-                                >
+                                <label class="form-check-label"
+                                       for="role_{{ $loop->index }}">
                                     {{ $role }}
                                 </label>
 
@@ -50,17 +66,32 @@
                         @endforeach
 
                     </div>
-
                 </div>
 
-                <div class="row mb-3">
-                  <label class="col-sm-2 col-form-label"></label>
-                  <div class="col-sm-10">
-                    <button type="submit" class="btn btn-primary">Modifier</button>
-                  </div>
+                {{-- BUTTON --}}
+                <div class="row mt-4">
+                    <div class="col-sm-10 offset-sm-2">
+
+                        <button class="btn btn-primary"
+                                type="submit"
+                                wire:loading.attr="disabled">
+
+                            <span wire:loading.remove>
+                                Modifier
+                            </span>
+
+                            <span wire:loading>
+                                Enregistrement...
+                            </span>
+
+                        </button>
+
+                    </div>
                 </div>
 
-              </form><!-- End General Form Elements -->
+            </form>
 
-            </div>
-          </div>
+        </div>
+    </div>
+
+</div>

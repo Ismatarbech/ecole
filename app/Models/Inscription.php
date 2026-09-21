@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Inscription extends Model
 {
+    use SoftDeletes;
     protected $fillable = [
         'eleve_id',
         'classe_id',
